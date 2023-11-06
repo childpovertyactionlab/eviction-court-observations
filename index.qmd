@@ -343,7 +343,7 @@ flowchart TD
   H --> K(Ruled in favor of the landlord.)
   H --> L(Case is abated or rescheduled.)
   H --> M(Other outcome.)
-  K --> N(Tenant may appeal the case within 8 days.)
+  K --> N(Tenant may appeal the case within 5 days.)
   K ----> O(The tenant does not appeal and <br>fails to move out.)
   O --> P(Landlord may obtain a Writ of Possession <br>from the Justice of the Peace.)
   P --> Q(Constable posts a 24-hour notice before executing writ.)
