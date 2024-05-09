@@ -3,6 +3,7 @@
 
 /*-- scss:defaults --*/
 $theme: "cpal" !default;
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap");
 
 //
 // Color system
@@ -75,10 +76,10 @@ $link-color:                $success !default;
 // Fonts
 
 // stylelint-disable-next-line value-keyword-case
-$font-family-sans-serif:      Roboto, -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !default;
+$font-family-sans-serif:      Inter, Roboto, -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !default;
 $headings-font-weight:        600 !default;
 $font-family-monospace:       'Fira Code' !default;
-$headings-font-family:         Poppins !default;
+$headings-font-family:        Inter, $font-family-sans-serif !default;
 
 // Default Enable
 
@@ -190,6 +191,11 @@ $btn-close-opacity:          .8 !default;
 $btn-close-hover-opacity:    1 !default;
 
 // Test
+html {
+  scroll-behavior: smooth;
+}
+
+
 div.shadecontent
 {
     padding: 10px;

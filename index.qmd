@@ -17,9 +17,11 @@ library(DT)
 library(grid)
 library(gridExtra)
 
-libDB <- "C:/Users/Michael/CPAL Dropbox/"
+# libDB <- "C:/Users/Michael/CPAL Dropbox/"
+libDB <- "C:/Users/taylo/CPAL Dropbox/"
 
-googlesheets4::gs4_auth(email = "michael@childpovertyactionlab.org")
+# googlesheets4::gs4_auth(email = "michael@childpovertyactionlab.org")
+googlesheets4::gs4_auth(email = "taylor@childpovertyactionlab.org")
 
 courtobs <- read_sheet(ss = "https://docs.google.com/spreadsheets/d/1O9P06SgvZ_nRGc64W2OsSjyX9iCS_LkcsG9087HNTuk",
                                sheet = "Form Responses 1") %>%

@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.4.549">
+<meta name="generator" content="quarto-1.3.450">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -46,12 +46,7 @@ ul.task-list li input[type="checkbox"] {
   "collapse-after": 3,
   "panel-placement": "end",
   "type": "textbox",
-  "limit": 50,
-  "keyboard-shortcut": [
-    "f",
-    "/",
-    "s"
-  ],
+  "limit": 20,
   "language": {
     "search-no-results-text": "No results",
     "search-matching-documents-text": "matching documents",
@@ -60,7 +55,6 @@ ul.task-list li input[type="checkbox"] {
     "search-more-match-text": "more match in this document",
     "search-more-matches-text": "more matches in this document",
     "search-clear-button-title": "Clear",
-    "search-text-placeholder": "",
     "search-detached-cancel-button-title": "Cancel",
     "search-submit-button-title": "Submit",
     "search-label": "Search"
@@ -70,15 +64,16 @@ ul.task-list li input[type="checkbox"] {
 <script src="site_libs/quarto-diagram/mermaid.min.js"></script>
 <script src="site_libs/quarto-diagram/mermaid-init.js"></script>
 <link href="site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
-<script src="site_libs/htmlwidgets-1.6.4/htmlwidgets.js"></script>
+
+<script src="site_libs/htmlwidgets-1.6.2/htmlwidgets.js"></script>
 <link href="site_libs/datatables-css-0.0.0/datatables-crosstalk.css" rel="stylesheet">
-<script src="site_libs/datatables-binding-0.31/datatables.js"></script>
+<script src="site_libs/datatables-binding-0.29/datatables.js"></script>
 <script src="site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
-<link href="site_libs/dt-core-1.13.6/css/jquery.dataTables.min.css" rel="stylesheet">
-<link href="site_libs/dt-core-1.13.6/css/jquery.dataTables.extra.css" rel="stylesheet">
-<script src="site_libs/dt-core-1.13.6/js/jquery.dataTables.min.js"></script>
-<link href="site_libs/crosstalk-1.2.1/css/crosstalk.min.css" rel="stylesheet">
-<script src="site_libs/crosstalk-1.2.1/js/crosstalk.min.js"></script>
+<link href="site_libs/dt-core-1.13.4/css/jquery.dataTables.min.css" rel="stylesheet">
+<link href="site_libs/dt-core-1.13.4/css/jquery.dataTables.extra.css" rel="stylesheet">
+<script src="site_libs/dt-core-1.13.4/js/jquery.dataTables.min.js"></script>
+<link href="site_libs/crosstalk-1.2.0/css/crosstalk.min.css" rel="stylesheet">
+<script src="site_libs/crosstalk-1.2.0/js/crosstalk.min.js"></script>
 
 
 </head>
@@ -87,26 +82,26 @@ ul.task-list li input[type="checkbox"] {
 
 <div id="quarto-search-results"></div>
   <header id="quarto-header" class="headroom fixed-top">
-    <nav class="navbar navbar-expand " data-bs-theme="dark">
+    <nav class="navbar navbar-expand navbar-dark ">
       <div class="navbar-container container-fluid">
-      <div class="navbar-brand-container mx-auto">
+      <div class="navbar-brand-container">
     <a href="https://github.com/childpovertyactionlab/" class="navbar-brand navbar-brand-logo">
     <img src="./www/images/CPAL_Logo_White.png" alt="" class="navbar-logo">
     </a>
   </div>
           <ul class="navbar-nav navbar-nav-scroll ms-auto">
   <li class="nav-item dropdown ">
-    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-bmenub" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-bmenub" role="button" data-bs-toggle="dropdown" aria-expanded="false" rel="" target="">
  <span class="menu-text"><b>Menu<b></b></b></span>
     </a>
     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="nav-menu-bmenub">    
         <li>
-    <a class="dropdown-item" href="./index.html"><i class="bi bi-house-door-fill" role="img">
+    <a class="dropdown-item" href="./index.html" rel="" target=""><i class="bi bi-house-door-fill" role="img">
 </i> 
  <span class="dropdown-text">Home</span></a>
   </li>  
         <li>
-    <a class="dropdown-item" href="https://github.com/childpovertyactionlab/"><i class="bi bi-github" role="img">
+    <a class="dropdown-item" href="https://github.com/childpovertyactionlab/" rel="" target=""><i class="bi bi-github" role="img">
 </i> 
  <span class="dropdown-text">Github</span></a>
   </li>  
@@ -154,19 +149,17 @@ ul.task-list li input[type="checkbox"] {
   </div>
   
 
-
 </header>
-
 
 <p><strong>Eviction has a devastating impact on families:</strong> involuntary displacement leads to greater material hardship, poorer health and avoidable healthcare costs for children and their mothers, negative impacts on children’s academic achievement, and greater depression and parental stress. Eviction disproportionately impacts communities of color, and the likelihood of receiving an eviction judgment is highest for mothers with children.</p>
 <p><strong>Between November 1, 2022 and April 20, 2023, 18,485 evictions were filed in Dallas County, an average of 108.7 per day.</strong> This represents a 3.2% change over this same time period in 2022 and a 117.5% change over the same time period in 2021. Evictions have been on the rise since the end of the CDC Eviction Moratorium in August 2021, and Dallas County realized its highest one-month filing total in at least five years in <strong>August 2022</strong>, with <strong>4,355</strong> evictions filed.</p>
 <section id="eviction-court-observation-process" class="level1">
 <h1>Eviction Court Observation Process</h1>
-<div class="cell" data-fig-width="9" data-fig-height="12" data-layout-align="default">
+<div class="cell" data-fig-width="9" data-fig-height="12">
 <div class="cell-output-display">
 <div>
-<p></p><figure class="figure"><p></p>
 <div>
+
 <pre class="mermaid mermaid-js">flowchart TD
   A(Tenant receives written Notice to Vacate.) --&gt; B(Tenant given 1 or more days to move out &lt;br&gt;of rental depending on lease agreement.);
   B --&gt; C{{Tenant moves out of rental or &lt;br&gt;resolves issue with the landlord.}}
@@ -187,7 +180,6 @@ ul.task-list li input[type="checkbox"] {
   Q --&gt; R{{Constable executes writ and begins removing the tenant's property.}}
 </pre>
 </div>
-<p></p></figure><p></p>
 </div>
 </div>
 </div>
@@ -206,17 +198,14 @@ ul.task-list li input[type="checkbox"] {
 <p>From November 01, 2022 through April 20, 2023, 16 SMU Law student volunteers observed <strong>1,277 cases</strong>: 377 in Justice of the Peace Court 1-1, 17 in Justice of the Peace Court 1-2, 439 in Justice of the Peace Court 3-1, 51 in Justice of the Peace Court 4-1, and 393 in Justice of the Peace Court 5-1. The 1,277 observed cases represent <strong>10.1% coverage</strong> of all initially scheduled hearings across the five courts.. Student volunteers expanded to JP Court 1-2 and 4-1 for the first time in Spring 2023, hence the lower coverage rate.</p>
 <div class="cell">
 <div class="cell-output-display">
-<div>
-<figure class="figure">
-<p><img src="index_files/figure-html/Cases Chart-1.png" class="img-fluid figure-img" width="2700"></p>
-</figure>
-</div>
+<p><img src="index_files/figure-html/Cases Chart-1.png" class="img-fluid" width="2700"></p>
 </div>
 </div>
 <div class="cell">
 <div class="cell-output-display">
-<div class="datatables html-widget html-fill-item" id="htmlwidget-d5f15c43f19f30dd85ab" style="width:100%;height:auto;"></div>
-<script type="application/json" data-for="htmlwidget-d5f15c43f19f30dd85ab">{"x":{"filter":"none","vertical":false,"data":[["Court 1-1","Court 1-2","Court 3-1","Court 4-1","Court 5-1","Total"],["377","17","439","51","393","1,277"],["29.5%","1.3%","34.4%","4.0%","30.8%","100.0%"],["4,554","1,135","2,828","1,958","2,223","12,698"],["8.3%","1.5%","15.5%","2.6%","17.7%","10.1%"]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th>JP Court<\/th>\n      <th>Observed Cases<\/th>\n      <th>Share of Total Observed Cases (%)<\/th>\n      <th>Scheduled Hearings*<\/th>\n      <th>Observed Cases by Court (%)<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"paging":false,"searching":false,"info":false,"columnDefs":[{"name":"JP Court","targets":0},{"name":"Observed Cases","targets":1},{"name":"Share of Total Observed Cases (%)","targets":2},{"name":"Scheduled Hearings*","targets":3},{"name":"Observed Cases by Court (%)","targets":4}],"order":[],"autoWidth":false,"orderClasses":false,"rowCallback":"function(row, data, displayNum, displayIndex, dataIndex) {\n}"}},"evals":["options.rowCallback"],"jsHooks":[]}</script>
+
+<div class="datatables html-widget html-fill-item-overflow-hidden html-fill-item" id="htmlwidget-860cb77758f1cbc813b5" style="width:100%;height:auto;"></div>
+<script type="application/json" data-for="htmlwidget-860cb77758f1cbc813b5">{"x":{"filter":"none","vertical":false,"data":[["Court 1-1","Court 1-2","Court 3-1","Court 4-1","Court 5-1","Total"],["377","17","439","51","393","1,277"],["29.5%","1.3%","34.4%","4.0%","30.8%","100.0%"],["4,554","1,135","2,828","1,958","2,223","12,698"],["8.3%","1.5%","15.5%","2.6%","17.7%","10.1%"]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th>JP Court<\/th>\n      <th>Observed Cases<\/th>\n      <th>Share of Total Observed Cases (%)<\/th>\n      <th>Scheduled Hearings*<\/th>\n      <th>Observed Cases by Court (%)<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"paging":false,"searching":false,"info":false,"columnDefs":[],"order":[],"autoWidth":false,"orderClasses":false,"rowCallback":"function(row, data, displayNum, displayIndex, dataIndex) {\n}"}},"evals":["options.rowCallback"],"jsHooks":[]}</script>
 </div>
 </div>
 
@@ -226,11 +215,7 @@ ul.task-list li input[type="checkbox"] {
 <h4 data-anchor-id="across-the-1277-observed-cases-we-found">Across the 1,277 observed cases, we found:</h4>
 <div class="cell">
 <div class="cell-output-display">
-<div>
-<figure class="figure">
-<p><img src="index_files/figure-html/Cases by Reason-1.png" class="img-fluid figure-img" width="2700"></p>
-</figure>
-</div>
+<p><img src="index_files/figure-html/Cases by Reason-1.png" class="img-fluid" width="2700"></p>
 </div>
 </div>
 
@@ -242,11 +227,7 @@ ul.task-list li input[type="checkbox"] {
 </div>
 <div class="cell">
 <div class="cell-output-display">
-<div>
-<figure class="figure">
-<p><img src="index_files/figure-html/Representation for Cases-1.png" class="img-fluid figure-img" width="2700"></p>
-</figure>
-</div>
+<p><img src="index_files/figure-html/Representation for Cases-1.png" class="img-fluid" width="2700"></p>
 </div>
 </div>
 <div class="shadecontent">
@@ -254,11 +235,7 @@ ul.task-list li input[type="checkbox"] {
 </div>
 <div class="cell">
 <div class="cell-output-display">
-<div>
-<figure class="figure">
-<p><img src="index_files/figure-html/Legal Representation Tenants-1.png" class="img-fluid figure-img" width="2700"></p>
-</figure>
-</div>
+<p><img src="index_files/figure-html/Legal Representation Tenants-1.png" class="img-fluid" width="2700"></p>
 </div>
 </div>
 
@@ -269,11 +246,7 @@ ul.task-list li input[type="checkbox"] {
 </div>
 <div class="cell">
 <div class="cell-output-display">
-<div>
-<figure class="figure">
-<p><img src="index_files/figure-html/notice to vacate-1.png" class="img-fluid figure-img" width="2700"></p>
-</figure>
-</div>
+<p><img src="index_files/figure-html/notice to vacate-1.png" class="img-fluid" width="2700"></p>
 </div>
 </div>
 
@@ -287,8 +260,9 @@ ul.task-list li input[type="checkbox"] {
 <h4 data-anchor-id="across-all-cases-the-average-length-of-time-for-each-hearing-was-less-than-4-minutes.">Across all cases, the average length of time for each hearing was less than 4 minutes.</h4>
 <div class="cell">
 <div class="cell-output-display">
-<div class="datatables html-widget html-fill-item" id="htmlwidget-1eb2b94e59d630c7591d" style="width:100%;height:auto;"></div>
-<script type="application/json" data-for="htmlwidget-1eb2b94e59d630c7591d">{"x":{"filter":"none","vertical":false,"data":[["Court 1-1","Court 1-2","Court 3-1","Court 4-1","Court 5-1","Total"],["377","17","439","51","393","1,277"],["3.3 Minutes","3.3 Minutes","3.9 Minutes","4.3 Minutes","3.5 Minutes","3.6 Minutes"]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th>JP Court<\/th>\n      <th>Cases Observed<\/th>\n      <th>Average Case Length<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"paging":false,"searching":false,"info":false,"columnDefs":[{"name":"JP Court","targets":0},{"name":"Cases Observed","targets":1},{"name":"Average Case Length","targets":2}],"order":[],"autoWidth":false,"orderClasses":false,"rowCallback":"function(row, data, displayNum, displayIndex, dataIndex) {\n}"}},"evals":["options.rowCallback"],"jsHooks":[]}</script>
+
+<div class="datatables html-widget html-fill-item-overflow-hidden html-fill-item" id="htmlwidget-9b426e856aa23ee63d49" style="width:100%;height:auto;"></div>
+<script type="application/json" data-for="htmlwidget-9b426e856aa23ee63d49">{"x":{"filter":"none","vertical":false,"data":[["Court 1-1","Court 1-2","Court 3-1","Court 4-1","Court 5-1","Total"],["377","17","439","51","393","1,277"],["3.3 Minutes","3.3 Minutes","3.9 Minutes","4.3 Minutes","3.5 Minutes","3.6 Minutes"]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th>JP Court<\/th>\n      <th>Cases Observed<\/th>\n      <th>Average Case Length<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"paging":false,"searching":false,"info":false,"columnDefs":[],"order":[],"autoWidth":false,"orderClasses":false,"rowCallback":"function(row, data, displayNum, displayIndex, dataIndex) {\n}"}},"evals":["options.rowCallback"],"jsHooks":[]}</script>
 </div>
 </div>
 
@@ -296,11 +270,7 @@ ul.task-list li input[type="checkbox"] {
 <p>Average hearing length calculated by (1) counting the number of cases observed in each docket, including default judgments, (2) calculating the total time of the docket (end time - start time), (3) calculating the average length of each hearing by dividing docket time by number of cases observed, and then (4) calculating a weighted average across all observed dockets. Because not all cases in a single docket may have been observed, average length of time here is likely conservative – i.e., average length of time per hearing is likely an overestimate.</p>
 </div></div><div class="cell">
 <div class="cell-output-display">
-<div>
-<figure class="figure">
-<p><img src="index_files/figure-html/eviction outcome-1.png" class="img-fluid figure-img" width="2700"></p>
-</figure>
-</div>
+<p><img src="index_files/figure-html/eviction outcome-1.png" class="img-fluid" width="2700"></p>
 </div>
 </div>
 
@@ -316,11 +286,7 @@ ul.task-list li input[type="checkbox"] {
 <h4 data-anchor-id="however-appearing-in-court-and-having-legal-representation-matters-for-outcomes.-when-tenants-appeared-for-their-hearings-cases-were-decided-in-favor-of-the-landlord-53-of-the-time.">However, appearing in court and having legal representation matters for outcomes. When tenants appeared for their hearings, cases were decided in favor of the landlord 53% of the time.</h4>
 <div class="cell">
 <div class="cell-output-display">
-<div>
-<figure class="figure">
-<p><img src="index_files/figure-html/outcomes with appearance-1.png" class="img-fluid figure-img" width="2700"></p>
-</figure>
-</div>
+<p><img src="index_files/figure-html/outcomes with appearance-1.png" class="img-fluid" width="2700"></p>
 </div>
 </div>
 </section>
@@ -328,11 +294,7 @@ ul.task-list li input[type="checkbox"] {
 <h4 data-anchor-id="when-tenants-had-legal-representation-cases-were-decided-in-favor-of-the-landlord-7-of-the-time.">When tenants had legal representation, cases were decided in favor of the landlord 7% of the time.</h4>
 <div class="cell">
 <div class="cell-output-display">
-<div>
-<figure class="figure">
-<p><img src="index_files/figure-html/outcomes with representation-1.png" class="img-fluid figure-img" width="2700"></p>
-</figure>
-</div>
+<p><img src="index_files/figure-html/outcomes with representation-1.png" class="img-fluid" width="2700"></p>
 </div>
 </div>
 </section>
@@ -417,9 +379,10 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
     // clear code selection
     e.clearSelection();
   });
-  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+  function tippyHover(el, contentFn) {
     const config = {
       allowHTML: true,
+      content: contentFn,
       maxWidth: 500,
       delay: 100,
       arrow: false,
@@ -429,17 +392,8 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
       interactive: true,
       interactiveBorder: 10,
       theme: 'quarto',
-      placement: 'bottom-start',
+      placement: 'bottom-start'
     };
-    if (contentFn) {
-      config.content = contentFn;
-    }
-    if (onTriggerFn) {
-      config.onTrigger = onTriggerFn;
-    }
-    if (onUntriggerFn) {
-      config.onUntrigger = onUntriggerFn;
-    }
     window.tippy(el, config); 
   }
   const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
@@ -452,125 +406,6 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
       const id = href.replace(/^#\/?/, "");
       const note = window.document.getElementById(id);
       return note.innerHTML;
-    });
-  }
-  const xrefs = window.document.querySelectorAll('a.quarto-xref');
-  const processXRef = (id, note) => {
-    // Strip column container classes
-    const stripColumnClz = (el) => {
-      el.classList.remove("page-full", "page-columns");
-      if (el.children) {
-        for (const child of el.children) {
-          stripColumnClz(child);
-        }
-      }
-    }
-    stripColumnClz(note)
-    if (id === null || id.startsWith('sec-')) {
-      // Special case sections, only their first couple elements
-      const container = document.createElement("div");
-      if (note.children && note.children.length > 2) {
-        container.appendChild(note.children[0].cloneNode(true));
-        for (let i = 1; i < note.children.length; i++) {
-          const child = note.children[i];
-          if (child.tagName === "P" && child.innerText === "") {
-            continue;
-          } else {
-            container.appendChild(child.cloneNode(true));
-            break;
-          }
-        }
-        if (window.Quarto?.typesetMath) {
-          window.Quarto.typesetMath(container);
-        }
-        return container.innerHTML
-      } else {
-        if (window.Quarto?.typesetMath) {
-          window.Quarto.typesetMath(note);
-        }
-        return note.innerHTML;
-      }
-    } else {
-      // Remove any anchor links if they are present
-      const anchorLink = note.querySelector('a.anchorjs-link');
-      if (anchorLink) {
-        anchorLink.remove();
-      }
-      if (window.Quarto?.typesetMath) {
-        window.Quarto.typesetMath(note);
-      }
-      // TODO in 1.5, we should make sure this works without a callout special case
-      if (note.classList.contains("callout")) {
-        return note.outerHTML;
-      } else {
-        return note.innerHTML;
-      }
-    }
-  }
-  for (var i=0; i<xrefs.length; i++) {
-    const xref = xrefs[i];
-    tippyHover(xref, undefined, function(instance) {
-      instance.disable();
-      let url = xref.getAttribute('href');
-      let hash = undefined; 
-      if (url.startsWith('#')) {
-        hash = url;
-      } else {
-        try { hash = new URL(url).hash; } catch {}
-      }
-      if (hash) {
-        const id = hash.replace(/^#\/?/, "");
-        const note = window.document.getElementById(id);
-        if (note !== null) {
-          try {
-            const html = processXRef(id, note.cloneNode(true));
-            instance.setContent(html);
-          } finally {
-            instance.enable();
-            instance.show();
-          }
-        } else {
-          // See if we can fetch this
-          fetch(url.split('#')[0])
-          .then(res => res.text())
-          .then(html => {
-            const parser = new DOMParser();
-            const htmlDoc = parser.parseFromString(html, "text/html");
-            const note = htmlDoc.getElementById(id);
-            if (note !== null) {
-              const html = processXRef(id, note);
-              instance.setContent(html);
-            } 
-          }).finally(() => {
-            instance.enable();
-            instance.show();
-          });
-        }
-      } else {
-        // See if we can fetch a full url (with no hash to target)
-        // This is a special case and we should probably do some content thinning / targeting
-        fetch(url)
-        .then(res => res.text())
-        .then(html => {
-          const parser = new DOMParser();
-          const htmlDoc = parser.parseFromString(html, "text/html");
-          const note = htmlDoc.querySelector('main.content');
-          if (note !== null) {
-            // This should only happen for chapter cross references
-            // (since there is no id in the URL)
-            // remove the first header
-            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
-              note.children[0].remove();
-            }
-            const html = processXRef(null, note);
-            instance.setContent(html);
-          } 
-        }).finally(() => {
-          instance.enable();
-          instance.show();
-        });
-      }
-    }, function(instance) {
     });
   }
       let selectedAnnoteEl;
@@ -614,7 +449,6 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
             }
             div.style.top = top - 2 + "px";
             div.style.height = height + 4 + "px";
-            div.style.left = 0;
             let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
             if (gutterDiv === null) {
               gutterDiv = window.document.createElement("div");
@@ -640,32 +474,6 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
         });
         selectedAnnoteEl = undefined;
       };
-        // Handle positioning of the toggle
-    window.addEventListener(
-      "resize",
-      throttle(() => {
-        elRect = undefined;
-        if (selectedAnnoteEl) {
-          selectCodeLines(selectedAnnoteEl);
-        }
-      }, 10)
-    );
-    function throttle(fn, ms) {
-    let throttle = false;
-    let timer;
-      return (...args) => {
-        if(!throttle) { // first call gets through
-            fn.apply(this, args);
-            throttle = true;
-        } else { // all the others get throttled
-            if(timer) clearTimeout(timer); // cancel #2
-            timer = setTimeout(() => {
-              fn.apply(this, args);
-              timer = throttle = false;
-            }, ms);
-        }
-      };
-    }
       // Attach click handler to the DT
       const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
       for (const annoteDlNode of annoteDls) {
@@ -731,15 +539,12 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
     <div class="nav-footer-left">
       &nbsp;
     </div>   
-    <div class="nav-footer-center">
-<p>Copyright 2023 <b><a href="https://childpovertyactionlab.org/">The Child Poverty Action Lab</a>.</b></p>
-</div>
+    <div class="nav-footer-center">Copyright 2023 <b><a href="https://childpovertyactionlab.org/">The Child Poverty Action Lab</a>.</b></div>
     <div class="nav-footer-right">
       &nbsp;
     </div>
   </div>
 </footer>
-
 
 
 
