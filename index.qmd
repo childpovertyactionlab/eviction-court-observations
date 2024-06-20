@@ -1,6 +1,5 @@
 ---
-page-title: "Dallas Court Observation Project"
-display-title: ' ' 
+title: ""
 editor: 
   markdown: 
     wrap: 72
@@ -20,13 +19,11 @@ library(gridExtra)
 library(highcharter)
 library(dplyr)
 
-# libDB <- "C:/Users/Michael/CPAL Dropbox/"
-#libDB <- "C:/Users/taylo/CPAL Dropbox/"
-libDB <- "/Users/anushachowdhury/CPAL Dropbox/"
+libDB <- "C:/Users/Michael/CPAL Dropbox/"
+#libDB <- "/Users/anushachowdhury/CPAL Dropbox/"
 
-# googlesheets4::gs4_auth(email = "michael@childpovertyactionlab.org")
-#googlesheets4::gs4_auth(email = "taylor@childpovertyactionlab.org")
-googlesheets4::gs4_auth(email = "anusha@childpovertyactionlab.org")
+googlesheets4::gs4_auth(email = "michael@childpovertyactionlab.org")
+#googlesheets4::gs4_auth(email = "anusha@childpovertyactionlab.org")
 
 courtobs <- read_sheet(ss = "https://docs.google.com/spreadsheets/d/1O9P06SgvZ_nRGc64W2OsSjyX9iCS_LkcsG9087HNTuk",
                                sheet = "Form Responses 1") %>%
@@ -348,7 +345,8 @@ hc_cpal <- hc_theme(
       )
 
 ```
-<h2 style="font-size:48px;">Dallas Court Observation Project</h2>
+
+# Dallas Court Observation Project
 **Eviction has a devastating impact on families:** involuntary
 displacement leads to greater material hardship, poorer health and
 avoidable healthcare costs for children and their mothers, negative
@@ -429,42 +427,6 @@ flowchart TD
   
 ```
 
-```{r}
-
-org_data <- data.frame(
-  from = c("Tenant receives written Notice to Vacate.", 
-           "CEO", 
-           "CTO", 
-           "CFO", 
-           "CFO"),
-  to = c("Tenant given 1 or more days to move out of rental depending on lease agreement.", 
-         "CFO", 
-         "Dev Manager", 
-         "Accountant",
-         "HR Manager")
-)
-org_data <- data.frame(
-  from = c("CEO", "CEO", "CTO", "CFO", "CFO"),
-  to = c("CTO", "CFO", "Dev Manager", "Accountant", "HR Manager")
-)
-highchart() %>%
-  hc_chart(type = "organization") %>%
-  hc_add_series(
-    data = org_data, 
-    name = "Organization Chart",
-    keys = c("from", "to"), # Important to define 'from' and 'to' keys
-    nodes = list( 
-      list(id = "CEO", title = "Chief Executive Officer"),
-      list(id = "CTO", title = "Chief Technology Officer"),
-      list(id = "CFO", title = "Chief Financial Officer"),
-      list(id = "Dev Manager", title = "Development Manager"),
-      list(id = "Accountant", title = "Accountant"),
-      list(id = "HR Manager", title = "HR Manager")
-    ),
-    nodeWidth = 150
-  ) %>%
-  hc_title(text = "Company Organization Chart")
-```
 # Project Background
 
 In spring 2021, the Child Poverty Action Lab (CPAL) launched a court

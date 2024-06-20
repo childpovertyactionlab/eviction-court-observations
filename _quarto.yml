@@ -6,7 +6,7 @@ format:
     theme: www/web_report.scss
     toc-title: Contents
     toc: true
-    toc-depth: 2
+    toc-depth: 1
     toc-location: right
     anchor-sections: false
     code-summary: "Reveal Code"
