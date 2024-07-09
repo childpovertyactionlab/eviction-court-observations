@@ -1,0 +1,1670 @@
+---
+page-title: "Dallas Court Observation Project"
+display-title: ' ' 
+editor: 
+  markdown: 
+    wrap: 72
+---
+
+```{r, Data Inputs}
+#| include: FALSE
+library(cpaltemplates)
+library(tidycensus)
+library(tidyverse)
+library(rio)
+library(sf)
+library(googlesheets4)
+library(DT)
+library(grid)
+library(gridExtra)
+library(highcharter)
+library(dplyr)
+
+# libDB <- "C:/Users/Michael/CPAL Dropbox/"
+#libDB <- "C:/Users/taylo/CPAL Dropbox/"
+libDB <- "/Users/anushachowdhury/CPAL Dropbox/"
+
+# googlesheets4::gs4_auth(email = "michael@childpovertyactionlab.org")
+#googlesheets4::gs4_auth(email = "taylor@childpovertyactionlab.org")
+googlesheets4::gs4_auth(email = "anusha@childpovertyactionlab.org")
+
+courtobs <- read_sheet(ss = "https://docs.google.com/spreadsheets/d/1O9P06SgvZ_nRGc64W2OsSjyX9iCS_LkcsG9087HNTuk",
+                               sheet = "Form Responses 1") %>%
+  janitor::clean_names(.) %>%
+  rename("timeStamp"="timestamp",
+         "observer"="observer",
+         "observationDate"="date_of_observation",
+         "jpCourt"="justice_of_the_peace_court",
+         "docketStart"="docket_start_time_please_indicate_what_time_the_judge_called_the_first_case_on_the_docket_use_format_hh_mm_and_specify_am_or_pm_e_g_09_32_am",
+         "docketEnd"="docket_end_time_please_indicate_the_time_the_judge_finished_hearing_the_last_case_on_the_docket_use_format_hh_mm_and_specify_am_or_pm_e_g_12_34_pm",
+         "caseNumber"="case_number",
+         "caseType"="is_this_a_commercial_or_residential_eviction_case",
+         "plaintiffName"="plaintiff_landlord_name",
+         "plaintiffDesignee"="did_the_plaintiff_landlord_or_their_designee_like_a_property_manager_appear",
+         "plaintiffRep"="did_the_plaintiff_landlord_have_additional_representation_of_some_kind",
+         "defName"="defendant_tenant_name",
+         "defAppear"="did_the_defendant_tenant_appear",
+         "defRep"="did_the_defendant_tenant_have_additional_representation_of_some_kind",
+         "evicReason"="reason_for_eviction_select_multiple_if_applicable",
+         "totalOwned"="total_amount_owed_please_indicate_the_total_amount_that_the_judge_or_landlord_states_is_owed_include_the_sum_of_rent_or_damages_owed_plus_court_costs_use_format_xxxx_xx_for_example_1234_50",
+         "noticeVacate"="was_there_any_discussion_about_the_notice_to_vacate_ntv",
+         "noticeConfirm"="if_yes_did_the_judge_confirm_the_ntv",
+         "jpRuled"="the_jp_ruled_in_favor_of",
+         "outcomeOther"="if_you_selected_other_please_specify_the_outcome_of_the_case_below",
+         "otherNotes"="additional_case_notes"
+) %>%
+  filter(!jpCourt %in% c("5-2", "3-2", "2-1", '2-2'),
+         !is.na(jpCourt),
+         observationDate <= as.Date("2024-04-26")
+         ) %>%
+  mutate(jpCourt = paste("Court", jpCourt),
+         observationDate = as.Date(observationDate, format = "%Y-%m-%d"))
+
+#dallas county evictions dataset
+evictions <- rio::import(paste0(libDB, "Data Library/Dallas County/Eviction Records/Data/Dallas County Eviction Master/EvictionRecords_Master.csv")) %>%
+  mutate(jpCourt = str_remove(court, "Court  "))%>%
+         #filed_date = mdy(filed_date),
+         #appearance_date = mdy(appearance_date)) %>%
+  filter(!jpCourt %in% c("5-2", "3-2", "NA"))
+
+#court observation dates
+startDate <- min(courtobs$observationDate, na.rm = TRUE)
+endDate <- max(courtobs$observationDate, na.rm = TRUE)
+
+#total days between start and end of data
+totdays <- difftime(endDate, startDate, "days") %>%
+  as.numeric()
+
+#evictions by year
+#2024
+totevic4 <- evictions%>%
+  filter(filed_date >= as.Date('2023-06-20') & filed_date < as.Date('2024-04-26'))
+
+# most recent year (this year) (2023)
+totevic1 <- evictions %>%
+  filter(filed_date >= as.Date("2022-11-01") & filed_date < as.Date("2023-04-20"))
+
+#last year(2022)
+totevic2 <- evictions %>%
+  filter(filed_date >= as.Date("2021-11-01") & filed_date < as.Date("2022-04-20"))
+
+# oldest year (two years ago) (2021)
+totevic3 <- evictions %>%
+  filter(filed_date >= as.Date("2020-11-01") & filed_date < as.Date("2021-04-20"))
+
+#average evictions by day 2024
+avgevic3 <- round(nrow(totevic4)/totdays, digits = 1)
+
+#average evictions by day, this year (2023)
+avgevic1 <- round(nrow(totevic1)/totdays, digits = 1)
+
+#average evictions by day, last year (2022)
+avgevic2 <- round(nrow(totevic2)/totdays, digits = 1)
+
+#percent change in evictions this year (2024)
+chgevic3 <- round(((nrow(totevic4)-nrow(totevic1))/nrow(totevic1))*100, digits = 1)
+#percent change in evictions this year (2023)
+chgevic1 <- round(((nrow(totevic1)-nrow(totevic2))/nrow(totevic2))*100, digits = 1)
+#percent change in evictions last year (2022)
+chgevic2 <- round(((nrow(totevic1)-nrow(totevic3))/nrow(totevic3))*100, digits = 1)
+
+#average evictions by month in the last 5 years
+evicMonths <- evictions %>%
+  filter(filed_date >= as.Date("2019-01-01")) %>%
+  group_by(lubridate::year(filed_date), lubridate::month(filed_date)) %>%
+  summarize(totevic = n()) %>%
+  rename(yearFiled = 1,
+         monthFiled = 2) %>%
+  mutate(dateFiled = as.Date(paste0(yearFiled, "-", monthFiled, "-01"))) %>%
+  ungroup(.)
+
+#month with highest number of evictions in the last 5 years
+highestMonth <- evicMonths %>%
+  filter(totevic == max(totevic))
+
+#total number of SMU students observing cases
+smuStudents <- n_distinct(courtobs$observer)
+
+#total number of cases observed
+totObsCases <- courtobs %>%
+  nrow(.)
+
+#total number of cases scheduled by court in time period of court observations
+obsCourt <- evictions %>%
+  filter(appearance_date >= as.Date("2023-06-20") & appearance_date < as.Date("2024-04-26")) %>%
+  filter(jpCourt %in% unique(courtobs$jpCourt)) %>%
+  group_by(jpCourt) %>%
+  summarize(totEvic = n()) %>%
+  ungroup(.)
+
+#total number of cases observed by volunteers in observation period by court
+jpCasesObs <- courtobs %>%
+  group_by(jpCourt) %>%
+  summarize(obsCases = n()) %>%
+  mutate(perObsCases = obsCases/totObsCases) %>%
+  ungroup(.) %>%
+  left_join(., obsCourt) %>%
+  janitor::adorn_totals() %>%
+  mutate(perAllCases = obsCases/totEvic)
+jpCasesObs24 <- courtobs %>%
+  filter(observationDate >= as.Date("2023-06-20") & observationDate < as.Date("2024-04-26")) %>%
+  group_by(jpCourt) %>%
+  summarize(obsCases = n()) %>%
+  mutate(perObsCases = obsCases/totObsCases) %>%
+  ungroup(.) %>%
+  left_join(., obsCourt) %>%
+  janitor::adorn_totals() %>%
+  mutate(perAllCases = obsCases/totEvic)
+jpCasesObs23 <- courtobs %>%
+  filter(observationDate >= as.Date("2022-11-01") & observationDate < as.Date("2023-04-20")) %>%
+  group_by(jpCourt) %>%
+  summarize(obsCases = n()) %>%
+  mutate(perObsCases = obsCases/totObsCases) %>%
+  ungroup(.) %>%
+  left_join(., obsCourt) %>%
+  janitor::adorn_totals() %>%
+  mutate(perAllCases = obsCases/totEvic)
+
+#cases observed compared to entire county
+jpCasesCty <- jpCasesObs %>%
+  summarize(obsCases = sum(obsCases),
+            totEvic = sum(totEvic)) %>%
+  mutate(perAllCases = round(obsCases/totEvic, digits = 3))
+
+#case outcome by party filed in favor of by jp court
+caseOutcome <- courtobs %>%
+  filter(!is.na(jpCourt),
+         observationDate >= as.Date("2023-06-20") & observationDate < as.Date("2024-04-26")) %>%
+  mutate(outcomeParty = ifelse(str_detect(jpRuled, "Plaintiff"), "Ruled in Favor of Landlord",
+                                          ifelse(str_detect(jpRuled, "Defendant"), "Ruled in Favor of Tenant", 
+                                                 ifelse(str_detect(jpRuled, "abated"), "Abated",
+                                                        ifelse(str_detect(jpRuled, "dismissed"), "Dismissed", jpRuled))))) %>%
+  group_by(jpCourt, outcomeParty) %>%
+  summarize(count = n()) %>%
+  mutate(perOutcome = count/sum(count)) %>%
+  ungroup(.) %>%
+  group_by(outcomeParty) %>%
+  group_map(~ .x %>%
+          janitor::adorn_totals(),.keep = T) %>% 
+  bind_rows() %>%
+  mutate(test = lag(outcomeParty),
+         outcomeParty = ifelse(str_detect(outcomeParty, "Other|Dismissed|Abated|Ruled|Unknown"), outcomeParty, test)) %>%
+  select(-test) %>%
+  group_by(jpCourt) %>%
+  mutate(perOutcome = count/sum(count)) %>%
+  ungroup()
+
+#case outcome by appearance in court
+outcomeApp <- courtobs %>%
+  filter(!is.na(jpCourt),
+         observationDate >= as.Date("2023-06-20") & observationDate < as.Date("2024-04-26")) %>%
+  filter(defAppear != "Unknown") %>%
+  mutate(outcomeParty = ifelse(str_detect(jpRuled, "Plaintiff"), "Ruled in Favor of Landlord",
+                                          ifelse(str_detect(jpRuled, "Defendant"), "Ruled in Favor of Tenant", 
+                                                 ifelse(str_detect(jpRuled, "abated"), "Abated",
+                                                        ifelse(str_detect(jpRuled, "dismissed"), "Dismissed", jpRuled))))) %>%
+  group_by(defAppear, outcomeParty) %>%
+  summarize(count = n()) %>%
+  mutate(perOutcome = count/sum(count)) %>%
+  ungroup(.)
+
+#case outcome by representation for tenant
+outcomeRep <- courtobs %>%
+  filter(!is.na(jpCourt),
+         observationDate >= as.Date("2023-06-20") & observationDate < as.Date("2024-04-26")) %>%
+  filter(defRep == "Yes, an attorney was present for the defendant." | defRep == "No, the defendant did not have additional representation.") %>%
+  mutate(outcomeParty = ifelse(str_detect(jpRuled, "Plaintiff"), "Ruled in Favor of Landlord",
+                                          ifelse(str_detect(jpRuled, "Defendant"), "Ruled in Favor of Tenant", 
+                                                 ifelse(str_detect(jpRuled, "abated"), "Abated",
+                                                        ifelse(str_detect(jpRuled, "dismissed"), "Dismissed", jpRuled))))) %>%
+  group_by(defRep, outcomeParty) %>%
+  summarize(count = n()) %>%
+  mutate(perOutcome = count/sum(count)) %>%
+  ungroup(.)
+
+#appearing for hearing
+defAppear <- courtobs %>%
+  filter(!is.na(jpCourt),
+         defAppear != "Unknown") %>%
+  group_by(jpCourt, defAppear) %>%
+  summarize(count = n()) %>%
+  filter(count > 1) %>%
+  ungroup(.) %>%
+  pivot_wider(names_from = defAppear, values_from = count, values_fill = 0) %>%
+  janitor::adorn_totals() %>%
+  mutate(AppearPer = Yes/(Yes+No),
+         type = "Tenant (Defendant) Appeared for Hearing")
+
+plaAppear <- courtobs %>%
+  filter(!is.na(jpCourt),
+         plaintiffDesignee != "Unknown") %>%
+  group_by(jpCourt, plaintiffDesignee) %>%
+  summarize(count = n()) %>%
+  filter(count > 1) %>%
+  ungroup(.) %>%
+  pivot_wider(names_from = plaintiffDesignee, values_from = count, values_fill = 0) %>%
+  janitor::adorn_totals() %>%
+  mutate(AppearPer = Yes/(Yes+No),
+         type = "Landlord (Plaintiff) Appeared for Hearing")
+
+caseAppear <- rbind(defAppear, plaAppear)
+#2024
+defAppear24 <- courtobs %>%
+  filter(!is.na(jpCourt),
+         defAppear != "Unknown",
+         observationDate >= as.Date("2023-06-20") & observationDate < as.Date("2024-04-26")) %>%
+  group_by(jpCourt, defAppear) %>%
+  summarize(count = n()) %>%
+  filter(count > 1) %>%
+  ungroup(.) %>%
+  pivot_wider(names_from = defAppear, values_from = count, values_fill = 0) %>%
+  janitor::adorn_totals() %>%
+  mutate(AppearPer = Yes/(Yes+No),
+         type = "Tenant (Defendant) Appeared for Hearing")
+
+plaAppear24 <- courtobs %>%
+  filter(!is.na(jpCourt),
+         plaintiffDesignee != "Unknown",
+         observationDate >= as.Date("2023-06-20") & observationDate < as.Date("2024-04-26")) %>%
+  group_by(jpCourt, plaintiffDesignee) %>%
+  summarize(count = n()) %>%
+  filter(count > 1) %>%
+  ungroup(.) %>%
+  pivot_wider(names_from = plaintiffDesignee, values_from = count, values_fill = 0) %>%
+  janitor::adorn_totals() %>%
+  mutate(AppearPer = Yes/(Yes+No),
+         type = "Landlord (Plaintiff) Appeared for Hearing")
+
+caseAppear24 <- rbind(defAppear24, plaAppear24)
+
+#2023
+defAppear23 <- courtobs %>%
+  filter(!is.na(jpCourt),
+         defAppear != "Unknown",
+         observationDate >= as.Date("2022-11-01") & observationDate < as.Date("2023-04-20")) %>%
+  group_by(jpCourt, defAppear) %>%
+  summarize(count = n()) %>%
+  filter(count > 1) %>%
+  ungroup(.) %>%
+  pivot_wider(names_from = defAppear, values_from = count, values_fill = 0) %>%
+  janitor::adorn_totals() %>%
+  mutate(AppearPer = Yes/(Yes+No),
+         type = "Tenant (Defendant) Appeared for Hearing")
+
+plaAppear23 <- courtobs %>%
+  filter(!is.na(jpCourt),
+         plaintiffDesignee != "Unknown",
+         observationDate >= as.Date("2022-11-01") & observationDate < as.Date("2023-04-20")) %>%
+  group_by(jpCourt, plaintiffDesignee) %>%
+  summarize(count = n()) %>%
+  filter(count > 1) %>%
+  ungroup(.) %>%
+  pivot_wider(names_from = plaintiffDesignee, values_from = count, values_fill = 0) %>%
+  janitor::adorn_totals() %>%
+  mutate(AppearPer = Yes/(Yes+No),
+         type = "Landlord (Plaintiff) Appeared for Hearing")
+
+caseAppear23 <- rbind(defAppear23, plaAppear23)
+
+
+
+#case outcomes when defendant is present for all cases observed
+defPresent <- courtobs %>%
+  filter(!is.na(jpCourt),
+         defAppear != "Unknown") %>%
+  group_by(defAppear, jpRuled) %>%
+  summarize(count = n()) %>%
+  ungroup(.) %>%
+  pivot_wider(names_from = defAppear, values_from = count, values_fill = 0) %>%
+  mutate(NoPer = No/sum(No),
+         YesPer = Yes/sum(Yes))
+
+#case outcomes when defendant has representation for all cases observed
+defRepresent <- courtobs %>%
+  filter(!is.na(jpCourt),
+         defAppear == "Yes") %>%
+  mutate(legalRep = ifelse(defRep == "Yes, an attorney was present for the defendant.", "Attorney present for tenant (Defendant)", "No attorney present for tenant")) %>%
+  group_by(jpCourt, legalRep) %>%
+  summarize(count = n()) %>%
+  mutate(perRep = count/sum(count)) %>%
+  ungroup(.) %>%
+  group_by(legalRep) %>%
+  group_map(~ .x %>%
+          janitor::adorn_totals(),.keep = T) %>% 
+  bind_rows() %>%
+  mutate(test = lag(legalRep),
+         legalRep = ifelse(str_detect(legalRep, "tenant"), legalRep, test)) %>%
+  select(-test) %>%
+  group_by(jpCourt) %>%
+  mutate(perRep = count/sum(count)) %>%
+  ungroup()
+#2024
+defRepresent24 <- courtobs %>%
+  filter(!is.na(jpCourt),
+         defAppear == "Yes",
+         observationDate >= as.Date("2023-06-20") & observationDate < as.Date("2024-04-26")) %>%
+  mutate(legalRep = ifelse(defRep == "Yes, an attorney was present for the defendant.", "Attorney present for tenant (Defendant)", "No attorney present for tenant")) %>%
+  group_by(jpCourt, legalRep) %>%
+  summarize(count = n()) %>%
+  mutate(perRep = count/sum(count)) %>%
+  ungroup(.) %>%
+  group_by(legalRep) %>%
+  group_map(~ .x %>%
+          janitor::adorn_totals(),.keep = T) %>% 
+  bind_rows() %>%
+  mutate(test = lag(legalRep),
+         legalRep = ifelse(str_detect(legalRep, "tenant"), legalRep, test)) %>%
+  select(-test) %>%
+  group_by(jpCourt) %>%
+  mutate(perRep = count/sum(count)) %>%
+  ungroup()
+#2023 
+defRepresent23 <- courtobs %>%
+  filter(!is.na(jpCourt),
+         defAppear == "Yes",
+         observationDate >= as.Date("2022-11-01") & observationDate < as.Date("2023-04-20")) %>%
+  mutate(legalRep = ifelse(defRep == "Yes, an attorney was present for the defendant.", "Attorney present for tenant (Defendant)", "No attorney present for tenant")) %>%
+  group_by(jpCourt, legalRep) %>%
+  summarize(count = n()) %>%
+  mutate(perRep = count/sum(count)) %>%
+  ungroup(.) %>%
+  group_by(legalRep) %>%
+  group_map(~ .x %>%
+          janitor::adorn_totals(),.keep = T) %>% 
+  bind_rows() %>%
+  mutate(test = lag(legalRep),
+         legalRep = ifelse(str_detect(legalRep, "tenant"), legalRep, test)) %>%
+  select(-test) %>%
+  group_by(jpCourt) %>%
+  mutate(perRep = count/sum(count)) %>%
+  ungroup()
+#2022
+
+# notice to vacate 
+ntv <- courtobs %>%
+  filter(!is.na(noticeVacate)) %>%
+  group_by(jpCourt, noticeVacate) %>%
+  summarize(count = n()) %>%
+  mutate(perntv = count/sum(count)) %>%
+  ungroup(.) %>%
+  group_by(noticeVacate) %>%
+  group_map(~ .x %>%
+          janitor::adorn_totals(),.keep = T) %>% 
+  bind_rows() %>%
+  mutate(test = lag(noticeVacate),
+         noticeVacate = ifelse(str_detect(noticeVacate, "Yes|No|Unknown"), noticeVacate, test)) %>%
+  select(-test) %>%
+  group_by(jpCourt) %>%
+  mutate(perntv = count/sum(count)) %>%
+  ungroup()
+ntv24 <- courtobs %>%
+  filter(!is.na(noticeVacate),
+          observationDate >= as.Date("2023-06-20") & observationDate < as.Date("2024-04-26")) %>%
+  group_by(jpCourt, noticeVacate) %>%
+  summarize(count = n()) %>%
+  mutate(perntv = count/sum(count)) %>%
+  ungroup(.) %>%
+  group_by(noticeVacate) %>%
+  group_map(~ .x %>%
+          janitor::adorn_totals(),.keep = T) %>% 
+  bind_rows() %>%
+  mutate(test = lag(noticeVacate),
+         noticeVacate = ifelse(str_detect(noticeVacate, "Yes|No|Unknown"), noticeVacate, test)) %>%
+  select(-test) %>%
+  group_by(jpCourt) %>%
+  mutate(perntv = count/sum(count)) %>%
+  ungroup()
+ntv23 <- courtobs %>%
+  filter(!is.na(noticeVacate),
+          observationDate >= as.Date("2022-11-01") & observationDate < as.Date("2023-04-20")) %>%
+  group_by(jpCourt, noticeVacate) %>%
+  summarize(count = n()) %>%
+  mutate(perntv = count/sum(count)) %>%
+  ungroup(.) %>%
+  group_by(noticeVacate) %>%
+  group_map(~ .x %>%
+          janitor::adorn_totals(),.keep = T) %>% 
+  bind_rows() %>%
+  mutate(test = lag(noticeVacate),
+         noticeVacate = ifelse(str_detect(noticeVacate, "Yes|No|Unknown"), noticeVacate, test)) %>%
+  select(-test) %>%
+  group_by(jpCourt) %>%
+  mutate(perntv = count/sum(count)) %>%
+  ungroup()
+
+# average hearing time
+hearingtime <- courtobs %>%
+  mutate(dockLength = docketEnd-docketStart) %>%
+  group_by(jpCourt, observationDate) %>%
+  summarize(CasesObs = n(),
+            AvgDockLength = mean(dockLength, na.rm=TRUE)) %>%
+  ungroup() %>%
+  group_by(jpCourt)%>%
+  summarize(CasesObs = sum(CasesObs),
+            SumDockLength = as.numeric(sum(AvgDockLength))) %>%
+  ungroup(.) %>%
+  janitor::adorn_totals() %>%
+  mutate(AvgCaseLength = SumDockLength/CasesObs) %>%
+  select(-SumDockLength)#%>%
+  
+  
+
+
+#eviction reason
+totReason <- courtobs %>%
+  filter(!is.na(jpCourt)) %>%
+  mutate(evicClean = ifelse(str_detect(evicReason, ","), "Multiple Reasons", evicReason)) %>%
+  group_by(evicClean) %>%
+  summarize(count = n()) %>%
+  mutate(jpCourt = "Total",
+         perCases = count/sum(count)) %>%
+  ungroup(.)
+
+evicReason <- courtobs %>%
+  filter(!is.na(jpCourt)) %>%
+  mutate(evicClean = ifelse(str_detect(evicReason, ","), "Multiple Reasons", evicReason)) %>%
+  group_by(jpCourt, evicClean) %>%
+  summarize(count = n()) %>%
+  mutate(perCases = count/sum(count)) %>%
+  ungroup(.) %>%
+  rbind(., totReason)
+  
+evicReason24 <- courtobs %>%
+  filter(!is.na(jpCourt),
+         observationDate >= as.Date("2023-06-20") & observationDate < as.Date("2024-04-26")) %>%
+  mutate(evicClean = ifelse(str_detect(evicReason, ","), "Multiple Reasons", evicReason)) %>%
+  group_by(jpCourt, evicClean) %>%
+  summarize(count = n()) %>%
+  mutate(perCases = count/sum(count)) %>%
+  ungroup(.) %>%
+  rbind(., totReason)
+
+evicReason23 <- courtobs %>%
+  filter(!is.na(jpCourt),
+         observationDate >= as.Date("2022-11-01") & observationDate < as.Date("2023-04-20")) %>%
+  mutate(evicClean = ifelse(str_detect(evicReason, ","), "Multiple Reasons", evicReason)) %>%
+  group_by(jpCourt, evicClean) %>%
+  summarize(count = n()) %>%
+  mutate(perCases = count/sum(count)) %>%
+  ungroup(.) %>%
+  rbind(., totReason)
+  
+##### Text Inputs #####
+jp11 <- jpCasesObs %>% 
+  filter(jpCourt == "Court 1-1") %>% 
+  pull(obsCases)
+
+jp12 <- jpCasesObs %>% 
+  filter(jpCourt == "Court 1-2") %>% 
+  pull(obsCases)
+
+jp31 <- jpCasesObs %>% 
+  filter(jpCourt == "Court 3-1") %>% 
+  pull(obsCases)
+
+jp41 <- jpCasesObs %>% 
+  filter(jpCourt == "Court 4-1") %>% 
+  pull(obsCases)
+
+jp51 <- jpCasesObs %>% 
+  filter(jpCourt == "Court 5-1") %>% 
+  pull(obsCases)
+
+jpSum <- jp11+jp31+jp51
+
+jpPer <- jpSum/totObsCases
+
+hc_cpal <- hc_theme(
+        chart = list(
+          style = list(
+            fontFamily = "Inter"
+          )
+        )
+      )
+
+```
+
+<h2 style="font-size:48px;">Dallas Court Observation Project</h2>
+**Eviction has a devastating impact on families:** involuntary
+displacement leads to greater material hardship, poorer health and
+avoidable healthcare costs for children and their mothers, negative
+impacts on children’s academic achievement, and greater depression and
+parental stress. Eviction disproportionately impacts communities of
+color, and the likelihood of receiving an eviction judgment is highest
+for mothers with children.
+
+**Between
+`r format(min(totevic4$filed_date, na.rm = TRUE), "%B %d, %Y")` and
+`r format(max(totevic4$filed_date, na.rm = TRUE), "%B %d, %Y")`,
+`r prettyNum(nrow(totevic4), big.mark = ',')` evictions were filed in
+Dallas County, an average of `r avgevic3` per day.** This represents a
+`r paste0(chgevic3, "%")` change over this same time period in 2023 and
+a `r paste0(chgevic1, "%")` change over the same time period in 2022.
+Evictions have been on the rise since the end of the CDC Eviction
+Moratorium in August 2021, and Dallas County realized its highest
+one-month filing total in at least five years in
+**`r paste(month.name[highestMonth$monthFiled], highestMonth$yearFiled)`**,
+with **`r formatC(highestMonth$totevic, big.mark = ",")`** evictions
+filed.
+
+```{r}
+#| fig-height: 4
+
+evicMonthsTime <- evicMonths %>%
+  mutate(dateMonth = format(ymd(dateFiled), "%B"))
+evicMonthsTime$yearFiled<- as.character(evicMonthsTime$yearFiled)
+
+evicMonths2019 <- evicMonthsTime %>%
+  filter(yearFiled == '2019')
+evicMonthsTime <- evicMonthsTime %>%
+  filter(yearFiled != '2019')
+
+evicMonthstotal <- evicMonthsTime %>%
+  group_by(monthFiled, dateMonth) %>%  
+  summarize(totevic = sum(totevic), yearFiled = "Total")
+
+
+highchart()%>%
+  hc_add_series(data = evicMonthstotal,
+                type = 'line',
+                hcaes(x = dateMonth,
+                      y = totevic,
+                      group = yearFiled),
+                visible = FALSE)%>%
+  hc_add_series(data = evicMonths2019,
+                type = 'line',
+                hcaes(x = dateMonth,
+                      y = totevic,
+                      group = yearFiled),
+                color = '#FE9AD4')%>%
+  hc_add_series(data = evicMonthsTime,
+                type = 'line',
+                hcaes(x = dateMonth,
+                      y = totevic,
+                      group = yearFiled))%>%
+  
+  hc_xAxis(type = 'category',
+           categories = unique(evicMonthsTime$dateMonth))%>%
+  hc_add_theme(hc_cpal)%>%
+  hc_colors(palette_cpal_orange)%>%
+  hc_title(text = list('Monthly Eviction Totals by Year in Dallas County'))
+```
+
+
+# Eviction Court Observation Process
+<br>
+
+
+```{mermaid}
+%%| fig-width: 9
+%%| fig-height: 12
+flowchart TD
+  A(Tenant receives written Notice to Vacate.) --> B(Tenant given 1 or more days to move out <br>of rental depending on lease agreement.);
+  B --> C{{Tenant moves out of rental or <br>resolves issue with the landlord.}}
+  B ----> D(Tenant does not leave rental within <br>time frame dictated by Notice to Vacate.)
+  D --> E(Landlord files eviction suit with <br>their local JP Precinct.)
+  E --> F(Hearing is scheduled at least 10 days <br>after eviction filing is made.)
+  F --> G(Case is heard at JP court.)
+  G --> H(((Eviction Judgement)))
+  H --> I{{Case is dismissed.}}
+  H --> J{{Ruled in favor of the tenant.}}
+  H --> K(Ruled in favor of the landlord.)
+  H --> L(Case is abated or rescheduled.)
+  H --> M(Other outcome.)
+  K --> N(Tenant may appeal the case within 5 days.)
+  K ----> O(The tenant does not appeal and <br>fails to move out.)
+  O --> P(Landlord may obtain a Writ of Possession <br>from the Justice of the Peace.)
+  P --> Q(Constable posts a 24-hour notice before executing writ.)
+  Q --> R{{Constable executes writ and begins removing the tenant's property.}}
+  
+```
+
+```{r}
+
+# org_data <- data.frame(
+#   from = c("Tenant receives written Notice to Vacate.", 
+#            "CEO", 
+#            "CTO", 
+#            "CFO", 
+#            "CFO"),
+#   to = c("Tenant given 1 or more days to move out of rental depending on lease agreement.", 
+#          "CFO", 
+#          "Dev Manager", 
+#          "Accountant",
+#          "HR Manager")
+# )
+# org_data <- data.frame(
+#   from = c("CEO", "CEO", "CTO", "CFO", "CFO"),
+#   to = c("CTO", "CFO", "Dev Manager", "Accountant", "HR Manager")
+# )
+# highchart() %>%
+#   hc_chart(type = "organization") %>%
+#   hc_add_series(
+#     data = org_data, 
+#     name = "Organization Chart",
+#     keys = c("from", "to"), # Important to define 'from' and 'to' keys
+#     nodes = list( 
+#       list(id = "CEO", title = "Chief Executive Officer"),
+#       list(id = "CTO", title = "Chief Technology Officer"),
+#       list(id = "CFO", title = "Chief Financial Officer"),
+#       list(id = "Dev Manager", title = "Development Manager"),
+#       list(id = "Accountant", title = "Accountant"),
+#       list(id = "HR Manager", title = "HR Manager")
+#     ),
+#     nodeWidth = 150
+#   ) %>%
+#   hc_title(text = "Company Organization Chart")
+```
+
+# Project Background
+
+In spring 2021, the Child Poverty Action Lab (CPAL) launched a court
+observation project to collect, analyze, and share eviction-related data
+not otherwise reported publicly. Eviction docket court observation has
+been ongoing since, with the purpose of improving local
+understanding of how eviction unfolds, uncovering
+barriers/challenges for tenants and landlords, and identifying
+ways to better support tenants and landlords upstream of an eviction
+hearing. Observation first began in Dallas County Justice of the Peace
+Court 1-1, expanded to Dallas County Justice of the Peace Courts 3-1 and
+5-1 in 2022, and has continued to expand since.
+<!-- in 2023. -->
+
+# Case Observation Protocol
+
+The court observation project is powered by volunteer observers who
+attend eviction dockets in-person, take notes as eviction cases are
+heard, and then enter the data digitally for CPAL analysis. Since late
+2021, volunteer observers have mostly been SMU Dedman School of Law and UNT-Dallas College of Law
+students, primarily in their second or third year of law school,
+volunteering as part of a class requirement or to fulfill public service
+hours. CPAL staff on-board volunteer observers through a two-part
+training: the first is an introductory online session to explain the
+eviction process, and the second is an onsite session at a Justice of
+the Peace court focused on data collection through observation.
+
+Once trained, volunteers sign-up for dockets to observe using a digital
+scheduler. Volunteers select dockets to observe based on their
+availability, so observed cases do not represent a random selection.
+During docket observations, volunteers take notes on cases heard using a
+paper template and then enter the data afterwards into a Google Form
+created and managed by CPAL. Before analysis and reporting, CPAL reviews
+and cleans the data, as needed.
+
+# Case Observation Findings
+
+From `r format(startDate, "%B %d, %Y")` through
+`r format(endDate, "%B %d, %Y")`, `r smuStudents` SMU Law student
+volunteers observed **`r formattable::comma(totObsCases, digits = 0)`
+cases**: `r formattable::comma(jp11, digits = 0)` in Justice of the
+Peace Court 1-1, `r formattable::comma(jp12, digits = 0)` in Justice of
+the Peace Court 1-2, `r formattable::comma(jp31, digits = 0)` in Justice
+of the Peace Court 3-1, `r formattable::comma(jp41, digits = 0)` in
+Justice of the Peace Court 4-1, and
+`r formattable::comma(jp51, digits = 0)` in Justice of the Peace Court
+5-1. The `r formattable::comma(totObsCases, digits = 0)` observed cases
+represent **`r paste0(jpCasesCty$perAllCases*100, "% coverage")`** of
+all initially scheduled hearings across the five courts.. Student
+volunteers expanded to JP Court 4-2 for the first time in Spring
+2024, hence the lower coverage rate.
+
+
+```{r, Cases Chart}
+#| fig-height: 4
+##### highchart 1 #####
+plotCases <- jpCasesObs24 %>%
+  filter(!is.na(jpCourt) & obsCases > 1) %>%
+  select(jpCourt, perAllCases) %>%
+  mutate(perAntCases = 1-perAllCases) %>%
+  pivot_longer(cols = c("perAllCases", "perAntCases")) %>%
+  rename(perCases = value) %>%
+  mutate(type = ifelse(name == "perAllCases", "Observed", "Not Observed")) %>%
+  select(-name) %>%
+  mutate(perCases=100*perCases)
+
+highchart()%>%
+  hc_chart(type = 'column')%>%
+  hc_add_series(plotCases,
+                type = 'column',
+                mapping = hcaes(
+                  x = jpCourt,
+                  y = round(perCases, 2),
+                  group = type,
+                  color = ifelse(jpCourt == "Total", 
+                                 c('#4B1707','#ED683F')[match(type, unique(plotCases$type))], 
+                                 palette_cpal_main[match(type, unique(plotCases$type))])),
+                color = c('#008097', '#042d33'),
+                dataLabels = list(enabled = TRUE, format = "{point.y:.0f}%", style = list(fontWeight = "bold")))%>%
+  hc_xAxis(categories = unique(plotCases$jpCourt)) %>%
+  hc_yAxis(labels = list(format = "{value: .0f}%"), 
+           max = 100) %>%
+  hc_plotOptions(column = list(
+    dataLabels = list(enabled = TRUE, format = "{value:.0f}%")
+  )) %>%
+  hc_tooltip(pointFormat = "{series.name} cases: {point.y:.2f}%") %>%
+  hc_add_theme(hc_cpal)%>%
+  hc_title(text = 'Percent of Cases Observed in 2024')
+
+
+
+# ggplot(aes(x = type, y = perCases, fill = type)) +
+# geom_bar(stat = "identity") +
+# geom_text(aes(label = ifelse(perCases > 0.05, paste0(round(perCases*100, digits = 0), "%"), "")),
+#           position = position_stack(vjust = 0.5),
+#           fontface = "bold",
+#           color = "white") +
+# geom_text(aes(label = ifelse(perCases <= 0.05, paste0(round(perCases*100, digits = 0), "%"), "")),
+#           nudge_y = 0.05,
+#           fontface = "bold",
+#           color = "black") +
+# geom_rect(aes(xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf,),
+#           linewidth = 1.5,
+#           data = ~ subset(., jpCourt == "Total"),
+#           colour = "black", fill = NA, inherit.aes = FALSE) +
+# theme_cpal_print() +
+# facet_grid(~jpCourt) +
+# scale_y_continuous(labels = scales::percent) +
+# scale_fill_manual(values = palette_cpal_main) +
+# labs(x = "",
+#      y = "") +
+# remove_axis(axis = "x") +
+# remove_ticks()
+# 
+# cpal_plot(zeroGrob(),
+#           cpal_title("Percent of All Cases Observed by JP Court"),
+#           plotCases,
+#           cpal_logo_text(),
+#           ncol = 1,
+#           heights = c(1, 3, 30, 2))
+
+```
+
+```{r, Cases Table}
+jpCasesObs24 %>%
+  ungroup(.) %>%
+  transmute('JP Court' = jpCourt,
+            'Observed Cases' = scales::number(obsCases, big.mark = ","),
+            'Share of Total Observed Cases (%)' = scales::percent(perObsCases, accuracy = 0.1),
+            'Scheduled Hearings*' = scales::number(totEvic, big.mark = ","),
+            'Observed Cases by Court (%)' = scales::percent(perAllCases, accuracy = 0.1)) %>%
+    datatable(options = list(paging = FALSE,
+                           searching = FALSE,
+                           info = FALSE
+                           ),
+            rownames = FALSE) %>%
+  formatStyle(columns = colnames(.), fontWeight = 'bold', `text-align` = 'left') %>%
+  formatStyle(columns = colnames(.), fontFamily = "Poppins")
+```
+
+
+::: column-margin
+\*The scheduled hearings indicator was calculated based on the hearing
+date set at the time of the eviction filing. If a hearing date was
+subsequently rescheduled for a date later than April 20, then the case
+is still included here in the ‘scheduled hearings’ count. Some scheduled
+hearings may have been dismissed in advance of the docket, so ‘coverage’
+here is likely an underrepresentation of cases observed relative to the
+number of cases heard during a docket.
+:::
+
+<br>
+
+## Across 2023-2024 observed cases, we found:
+
+
+**Most eviction cases were due to nonpayment of rent.**
+
+::: {.panel-tabset}
+
+## 2024
+
+
+```{r}
+plotReason <- evicReason24
+
+evicClean_colors <- c(
+  "Holdover/lease expiration" = "#0047bd",
+  "Multiple Reasons" = "#a80092",
+  "Non-payment of rent" = "#042d33",
+  "Unknown" = "#ed018c",
+  "Violated lease" = "#008097"
+  )
+
+chart_container <- htmltools::div(style = "display: flex; flex-wrap: wrap; justify-content: center; overflow-y: hidden; gap: 5px") 
+
+createLegendBox <- function(color, label) {
+  htmltools::div(
+    style = paste0("display: flex; align-items: center; margin-right: 15px;"),
+    htmltools::div(style = paste0("width: 20px; height: 20px; background-color: ", color, "; margin-right: 5px;")),
+    htmltools::span(label)
+  )
+}
+
+for (court in unique(plotReason$jpCourt)){
+  court_data <- plotReason %>% filter(jpCourt == court)%>%
+    mutate(color = evicClean_colors[evicClean])
+  hc<- highchart() %>%
+    hc_chart(type = "pie") %>%
+    hc_add_series(
+      data = court_data,
+      hcaes(x = evicClean,
+            y = round(perCases*100, 2),
+            color = color),
+      name = 'Percent',
+      type = "pie",
+      dataLabels = list(enabled = FALSE),
+      tooltip = list(pointFormat = "{point.name}: <b>{point.y:.2f}%</b>"),
+      showInLegend=TRUE,
+      colorByPoint = TRUE
+      ) %>%
+    hc_legend(enabled = FALSE)%>%
+    hc_title(text = paste(court),
+             style = list(fontSize = "15px", fontWeight = 'bold'))%>%
+    hc_size(height=200, width = 200)%>%
+    hc_add_theme(hc_cpal)
+      
+    chart_container <- htmltools::tagAppendChild(chart_container, 
+                                                 htmltools::div(style = "width: 200px; height: 180px; margin: 5px;", hc)) 
+    }
+
+legend_container <- htmltools::div(
+  style = "display: flex; flex-wrap: wrap; justify-content: center; margin-top: 10px;"
+)
+
+
+for (reason in names(evicClean_colors)) {
+  legend_container <- htmltools::tagAppendChild(legend_container, 
+                                               createLegendBox(evicClean_colors[reason], reason))
+}
+
+chart_container <- htmltools::tagAppendChild(chart_container, legend_container)
+
+
+chart_container
+```
+
+
+## 2023
+
+
+```{r}
+plotReason <- evicReason23
+
+evicClean_colors <- c(
+  "Holdover/lease expiration" = "#0047bd",
+  "Multiple Reasons" = "#a80092",
+  "Non-payment of rent" = "#042d33",
+  "Unknown" = "#ed018c",
+  "Violated lease" = "#008097"
+  )
+
+chart_container <- htmltools::div(style = "display: flex; 
+                                  flex-wrap: wrap; 
+                                  justify-content: center; 
+                                  overflow-y: hidden; 
+                                  gap: 5px") 
+
+createLegendBox <- function(color, label) {
+  htmltools::div(
+    style = paste0("display: flex; align-items: center; margin-right: 15px;"),
+    htmltools::div(style = paste0("width: 20px; height: 20px; background-color: ", color, "; margin-right: 5px;")),
+    htmltools::span(label)
+  )
+}
+
+for (court in unique(plotReason$jpCourt)){
+  court_data <- plotReason %>% filter(jpCourt == court)%>%
+    mutate(color = evicClean_colors[evicClean])
+  hc<- highchart() %>%
+    hc_chart(type = "pie") %>%
+    hc_add_series(
+      data = court_data,
+      hcaes(x = evicClean,
+            y = round(perCases*100, 2),
+            color = color),
+      name = 'Percent',
+      type = "pie",
+      dataLabels = list(enabled = FALSE),
+      tooltip = list(pointFormat = "{point.name}: <b>{point.y:.2f}%</b>"),
+      showInLegend=TRUE,
+      colorByPoint = TRUE
+      ) %>%
+    hc_legend(enabled = FALSE)%>%
+    hc_title(text = paste(court),
+             style = list(fontSize = "15px", fontWeight = 'bold'))%>%
+    hc_size(height=70, width = 200)%>%
+    hc_add_theme(hc_cpal)
+      
+    chart_container <- htmltools::tagAppendChild(chart_container, 
+                                                 htmltools::div(style = "width: 200px; height: 220px; margin: 5px;", hc)) 
+    }
+
+legend_container <- htmltools::div(
+  style = "display: flex; flex-wrap: wrap; justify-content: center; margin-top: 10px;"
+)
+
+
+for (reason in names(evicClean_colors)) {
+  legend_container <- htmltools::tagAppendChild(legend_container, 
+                                               createLegendBox(evicClean_colors[reason], reason))
+}
+
+chart_container <- htmltools::tagAppendChild(chart_container, legend_container)
+
+
+chart_container
+```
+
+
+:::
+
+
+```{r, Cases by Reason}
+
+
+
+  # ggplot(aes(x = "", fill=evicClean, y=perCases)) +
+  # geom_bar(stat="identity") +
+  # geom_text(aes(label = ifelse(perCases >= 0.07, paste0(round(perCases*100, digits = 0), "%"), ""), x = 1.1),
+  #           position = position_stack(vjust = 0.5),
+  #           color = "#FFFFFF",
+  #           size = 3.5,
+  #           fontface = "bold") +
+  # coord_polar(theta = "y") +
+  # facet_grid(~jpCourt) +
+  # theme_cpal_print() +
+  # facet_grid(~jpCourt) +
+  # scale_fill_manual(values = palette_cpal_main) +
+  # labs(x = "",
+  #      y = "") +
+  # remove_axis(axis = "x") +
+  # remove_ticks()
+# 
+# cpal_plot(zeroGrob(),
+#           cpal_title("Most eviction cases were due to nonpayment of rent."),
+#           plotReason,
+#           cpal_logo_text(),
+#           ncol = 1,
+#           heights = c(1, 3, 30, 2))
+
+```
+
+
+<br>
+
+::: column-margin
+<!-- Values below 7% are not labeled on chart due to sizing limitation. -->
+
+\*The reason for an eviction case might be unknown if a default judgment
+was awarded to a landlord and the facts of the case were not discussed.
+<!-- Reasons are rounded to the nearest whole number, so totals may not equal -->
+<!-- 100%. -->
+:::
+
+::: shadecontent
+{{< fa house-chimney size=lg title="Housing" >}} **Why this matters**:
+Millions of dollars in federal rent relief have largely been expended at
+this time, but eviction filing data illustrates the ongoing need for
+financial assistance to renters who have fallen behind on rent.
+:::
+<br>
+**Landlords or their representatives almost always appeared for the hearing, but tenants appeared less than half the time.**
+
+::: {.panel-tabset}
+
+## 2024
+
+
+```{r, Representation for Cases}
+#| fig-height: 5
+
+plotAppear <- caseAppear24%>%
+  mutate(AppearPer=round(AppearPer*100, 2))
+highchart()%>%
+  hc_chart(type = 'column')%>%
+  hc_add_series(plotAppear,
+                type = 'column',
+                mapping = hcaes(
+                  x = jpCourt,
+                  y = AppearPer,
+                  group = type,
+                  color = ifelse(jpCourt == "Total", 
+                                 c('#4B1707','#ED683F')[match(type, unique(plotAppear$type))], 
+                                 palette_cpal_main[match(type, unique(plotAppear$type))])),
+                color = c('#008097', '#042d33'),
+                dataLabels = list(enabled = TRUE, format = "{point.y:.0f}%", style = list(fontWeight = "bold")))%>%
+  hc_xAxis(categories = plotAppear$jpCourt) %>%
+  hc_yAxis(labels = list(format = "{value: .0f}%"), 
+           max = 100) %>%
+  hc_plotOptions(column = list(
+    dataLabels = list(enabled = TRUE, format = "{value:.0f}%")
+  )) %>%
+  hc_tooltip(pointFormat = "{series.name} cases: {point.y:.2f}%") %>%
+  hc_add_theme(hc_cpal)
+
+#   ggplot(aes(x = type, y = AppearPer, fill = type)) +
+#   geom_bar(stat = "identity") +
+#   geom_text(aes(label = paste0(round(AppearPer*100, digits = 0), "%")),
+#             position = position_stack(vjust = 0.5),
+#             color = "white",
+#             fontface = "bold") +
+#   geom_rect(aes(xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf,),
+#             linewidth = 1.5,
+#             data = ~ subset(., jpCourt == "Total"), 
+#             colour = "black", fill = NA, inherit.aes = FALSE) +
+#   facet_grid(~jpCourt) +
+#   theme_cpal_print() +
+#   scale_y_continuous(labels = scales::percent) +
+#   scale_fill_manual(values = palette_cpal_main) +
+#   labs(x = "",
+#        y = "") +
+#   remove_axis(axis = "x") +
+#   remove_ticks()
+# 
+# cpal_plot(zeroGrob(),
+#           cpal_title(string = "Landlords or their representatives almost always appeared for the hearing, but tenants appeared less than half the time.",
+#                      width = 90),
+#           plotAppear, 
+#           cpal_logo_text(), 
+#           ncol = 1,
+#           heights = c(1, 3, 30, 2))
+```
+
+
+## 2023
+
+
+```{r}
+#| fig-height: 5
+
+plotAppear23 <- caseAppear23%>%
+  mutate(AppearPer=round(AppearPer*100, 2))
+highchart()%>%
+  hc_chart(type = 'column')%>%
+  hc_add_series(plotAppear23,
+                type = 'column',
+                mapping = hcaes(
+                  x = jpCourt,
+                  y = AppearPer,
+                  group = type,
+                  color = ifelse(jpCourt == "Total", 
+                                 c('#4B1707','#ED683F')[match(type, unique(plotAppear23$type))], 
+                                 palette_cpal_main[match(type, unique(plotAppear23$type))])),
+                color = c('#008097', '#042d33'),
+                dataLabels = list(enabled = TRUE, format = "{point.y:.0f}%", style = list(fontWeight = "bold")))%>%
+  hc_xAxis(categories = plotAppear23$jpCourt) %>%
+  hc_yAxis(labels = list(format = "{value: .0f}%"), 
+           max = 100) %>%
+  hc_plotOptions(column = list(
+    dataLabels = list(enabled = TRUE, format = "{value:.0f}%")
+  )) %>%
+  hc_tooltip(pointFormat = "{series.name} cases: {point.y:.2f}%") %>%
+  hc_add_theme(hc_cpal)
+```
+
+
+:::
+
+<br>
+
+::: shadecontent
+{{< fa house-chimney size=lg title="Housing" >}} **Why this matters**:
+When a tenant does not appear for an eviction hearing, a default
+judgment is usually awarded to the landlord, without consideration of
+the facts of the case. Tenants may not appear in court because they must
+go to work, lack transportation, are unclear about how eviction cases
+proceed, or have already determined to move out.
+:::
+<br>
+**Tenants rarely had legal representation.**
+
+::: {.panel-tabset}
+
+## 2024
+
+
+```{r}
+plotDef24 <- defRepresent24%>%
+  add_row(., tibble(jpCourt = "Court 4-2", legalRep = "Attorney present for tenant (Defendant)", count = 0, perRep = 0))%>%
+  group_by(jpCourt, legalRep)%>%
+  summarise(count = count, perRep = perRep)
+  
+
+
+#court_order <- c("Court 1-1", "Court 1-2", "Court 2-2", "Court 3-1", "Court 4-1", "Court 5-1", "Court 4-2", "Total" )
+
+highchart()%>%
+  hc_chart(type = "column") %>%
+  hc_add_series(
+    plotDef24,
+    type = "column",
+    mapping = hcaes(
+      x = jpCourt,
+      y = round(100*perRep, 2),  
+      group = legalRep,
+      color = ifelse(jpCourt == "Total", c('#ED683F','#4B1707')[match(legalRep, unique(plotDef24$legalRep))], palette_cpal_main[match(legalRep, unique(plotDef24$legalRep))])
+      ),
+    dataLabels = list(enabled = TRUE, format = "{point.y:.0f}%", style = list(fontWeight = "bold")))%>%
+  hc_plotOptions(column = list(borderWidth = 0)) %>%
+  hc_xAxis(categories = unique(plotDef24$jpCourt), labels = list(enabled = TRUE)) %>%
+  hc_yAxis(title = list(text = ""), labels = list(format = "{value}%"), max = 100) %>%
+  hc_tooltip(pointFormat = "{series.name} cases: {point.y:.0f}%") %>%
+  hc_colors(palette_cpal_main)%>%
+  hc_add_theme(hc_cpal)
+
+```
+
+
+## 2023
+
+
+```{r}
+plotDef23 <- defRepresent23%>%
+  #add_row(., tibble(jpCourt = "Court 4-2", legalRep = "Attorney present for tenant (Defendant)", count = 0, perRep = 0))%>%
+  group_by(jpCourt, legalRep)%>%
+  summarise(count = count, perRep = perRep)
+  
+
+
+#court_order <- c("Court 1-1", "Court 1-2", "Court 2-2", "Court 3-1", "Court 4-1", "Court 5-1", "Court 4-2", "Total" )
+
+highchart()%>%
+  hc_chart(type = "column") %>%
+  hc_add_series(
+    plotDef23,
+    type = "column",
+    mapping = hcaes(
+      x = jpCourt,
+      y = round(100*perRep, 2),  
+      group = legalRep,
+      color = ifelse(jpCourt == "Total", c('#ED683F','#4B1707')[match(legalRep, unique(plotDef23$legalRep))], palette_cpal_main[match(legalRep, unique(plotDef23$legalRep))])
+      ),
+    dataLabels = list(enabled = TRUE, format = "{point.y:.0f}%", style = list(fontWeight = "bold")))%>%
+  hc_plotOptions(column = list(borderWidth = 0)) %>%
+  hc_xAxis(categories = unique(plotDef23$jpCourt), labels = list(enabled = TRUE)) %>%
+  hc_yAxis(title = list(text = ""), labels = list(format = "{value}%"), max = 100) %>%
+  hc_tooltip(pointFormat = "{series.name} cases: {point.y:.0f}%") %>%
+  hc_colors(palette_cpal_main)%>%
+  hc_add_theme(hc_cpal)
+```
+
+
+:::
+
+
+```{r, Legal Representation Tenants}
+#| fig-height: 5
+
+#   ggplot(aes(x = legalRep, y = perRep, fill = legalRep)) +
+#   geom_bar(stat = "identity") +
+#   geom_text(aes(label = paste0(round(perRep*100, digits = 0), "%")),
+#             position = position_stack(vjust = 0.5),
+#             color = "white",
+#             fontface = "bold") +
+#   facet_grid(~jpCourt) +
+#   theme_cpal_print() +
+#   scale_y_continuous(labels = scales::percent) +
+#     scale_fill_manual(values = palette_cpal_main) +
+#   labs(x = "",
+#        y = "") +
+#   geom_rect(aes(xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf,),
+#             linewidth = 1.5,
+#             data = ~ subset(., jpCourt == "Total"), 
+#             colour = "black", fill = NA, inherit.aes = FALSE) +
+#   remove_axis(axis = "x") +
+#   remove_ticks()
+# 
+# cpal_plot(zeroGrob(),
+#           cpal_title(string = "Tenants rarely had legal representation, but representation has increased significantly since summer 2022.",
+#                      width = 90),
+#           plotDef, 
+#           cpal_logo_text(), 
+#           ncol = 1,
+#           heights = c(1, 3, 30, 2))
+```
+
+
+<br>
+
+::: column-margin
+<!-- \*In Summer 2022 across JP Courts 1-1, 3-1, and 5-1, 10% of tenants had -->
+<!-- legal representation.  -->
+\*In Spring 2023 and 2024 across all JP Courts listed, 25% of tenants had legal representation.
+:::
+
+::: shadecontent
+{{< fa house-chimney size=lg title="Housing" >}} **Why this matters**:
+Unlike criminal cases, defendants in civil cases generally do not have a
+right to counsel and are not assigned a public defender to represent
+them in court. As a result, very few tenants in eviction cases have
+legal representation and must defend themselves. Renters with legal
+representation in eviction hearings are much more likely to win their
+case and remain housed. Attorneys may also help renters negotiate terms
+with their landlords, keep eviction judgments off their records, and
+navigate other housing supports, like rent relief.
+:::
+<br>
+**A written Notice to Vacate is the legal first step to initiate an eviction, but a Notice to Vacate was confirmed in 53% of observed hearings in 2024. This is an improvement from 44% in 2023**
+
+::: {.panel-tabset}
+
+## 2024
+
+
+```{r, notice to vacate}
+#| fig-height: 5
+#no legend, better title
+plotntv <- ntv24 %>%
+  filter(noticeVacate == "Yes")
+highchart()%>%
+  hc_chart(type = 'column')%>%
+    hc_add_series(
+    plotntv,
+    type = "column",
+    name = 'Percentage of Cases with Written Notice Present',
+    mapping = hcaes(
+      x = jpCourt,
+      y = round(100*perntv, 2),
+      color = ifelse(jpCourt == "Total", '#ED683F', '#008097')
+      ),
+    dataLabels = list(enabled = TRUE, format = "{point.y:.0f}%", style = list(fontWeight = "bold")),
+    showInLegend = FALSE,
+    colorByPoint = TRUE)%>%
+  hc_plotOptions(column = list(borderWidth = 0)) %>%
+  hc_xAxis(categories = unique(plotntv$jpCourt), labels = list(enabled = TRUE)) %>%
+  hc_yAxis(title = list(text = ""), labels = list(format = "{value}%"), max = 100) %>%
+  hc_tooltip(pointFormat = "{series.name}: {point.y:.2f}%") %>%
+  #hc_colors(palette_cpal_main)%>%
+  hc_add_theme(hc_cpal)
+
+#   ggplot(aes(x = noticeVacate, y = perntv)) +
+#     geom_bar(stat = "identity",
+#              fill = "#008097") +
+#     geom_text(aes(label = paste0(round(perntv*100, digits = 0), "%")),
+#             position = position_stack(vjust = 0.5),
+#             color = "white",
+#             fontface = "bold") +
+#   geom_rect(aes(xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf,),
+#             linewidth = 1.5,
+#             data = ~ subset(., jpCourt == "Total"), 
+#             colour = "black", fill = NA, inherit.aes = FALSE) +
+#   facet_grid(~jpCourt) +
+#   theme_cpal_print() +
+#   scale_y_continuous(labels = scales::percent) +
+#   scale_fill_manual(values = palette_cpal_main) +
+#   labs(x = "",
+#        y = "") +
+#   remove_axis(axis = "x") +
+#   remove_ticks()
+# 
+# cpal_plot(zeroGrob(),
+#           cpal_title(string = "A written Notice to Vacate is the legal first step to initiate an eviction, but a Notice to Vacate was confirmed in 44% of all observed hearings.",
+#                      width = 90),
+#           plotntv, 
+#           cpal_logo_text(), 
+#           ncol = 1,
+#           heights = c(1, 3, 30, 2))
+
+```
+
+
+## 2023
+
+
+```{r}
+#| fig-height: 5
+plotntv23 <- ntv23 %>%
+  filter(noticeVacate == "Yes")
+highchart()%>%
+  hc_chart(type = 'column')%>%
+    hc_add_series(
+    plotntv23,
+    type = "column",
+    name = 'Percentage of Cases with Written Notice Present',
+    mapping = hcaes(
+      x = jpCourt,
+      y = round(100*perntv, 2),
+      color = ifelse(jpCourt == "Total", '#ED683F', '#008097')
+      ),
+    dataLabels = list(enabled = TRUE, format = "{point.y:.0f}%", style = list(fontWeight = "bold")),
+    showInLegend = FALSE,
+    colorByPoint = TRUE)%>%
+  hc_plotOptions(column = list(borderWidth = 0)) %>%
+  hc_xAxis(categories = unique(plotntv23$jpCourt), labels = list(enabled = TRUE)) %>%
+  hc_yAxis(title = list(text = ""), labels = list(format = "{value}%"), max = 100) %>%
+  hc_tooltip(pointFormat = "{series.name}: {point.y:.2f}%") %>%
+  #hc_colors(palette_cpal_main)%>%
+  hc_add_theme(hc_cpal)
+```
+
+
+:::
+
+
+
+<br>
+
+::: column-margin
+<!-- \*In Summer 2022 across JP Courts 1-1, 3-1, and 5-1, a Notice to Vacate -->
+<!-- was confirmed 33% of the time.  -->
+\*In Spring 2023 across JP Courts 1-1, 3-1,
+and 5-1, a Notice to Vacate was confirmed 44% of the time.
+:::
+
+::: shadecontent
+{{< fa house-chimney size=lg title="Housing" >}} **Why this matters**:
+Unless a lease agreement states otherwise, Texas law requires a landlord
+to give a renter at least three days to move out, and the landlord must
+provide this notice (called a Notice to Vacate) in writing. An eviction
+cannot be filed in court before providing a Notice to Vacate. If a
+Notice to Vacate was not properly administered, then the renter may have
+recourse to have the case dismissed. If the Notice to Vacate is not
+confirmed during an eviction hearing, then there may be a missed
+opportunity to dismiss the eviction suit.
+:::
+
+<br>
+
+## Across all cases, the average length of time for each hearing was less than 4 minutes.
+
+
+```{r, Average Hearing Time}
+hearingtime %>%
+  transmute('JP Court' = jpCourt,
+            'Cases Observed' = scales::number(CasesObs, big.mark = ","),
+            'Average Case Length' = paste(round(AvgCaseLength/60, digits = 1), "Minutes")) %>%
+  datatable(options = list(paging = FALSE,
+                           searching = FALSE,
+                           info = FALSE
+                           ),
+            rownames = FALSE) %>%
+  formatStyle(columns = colnames(.), fontWeight = 'bold', `text-align` = 'left') %>%
+  formatStyle(columns = colnames(.), fontFamily = "Poppins")
+```
+
+
+::: column-margin
+Average hearing length calculated by (1) counting the number of cases
+observed in each docket, including default judgments, (2) calculating
+the total time of the docket (end time - start time), (3) calculating
+the average length of each hearing by dividing docket time by number of
+cases observed, and then (4) calculating a weighted average across all
+observed dockets. Because not all cases in a single docket may have been
+observed, average length of time here is likely conservative – i.e.,
+average length of time per hearing is likely an overestimate.
+:::
+
+<br>
+
+## Across all observed cases, the judge ruled in favor of the landlord in 60% of cases and in favor of the tenant in 5% of cases.
+
+```{r, eviction outcome}
+#| fig-height: 4
+court_order <- c("Court 1-1", "Court 1-2", 
+                 #"Court 2-2",
+                 "Court 3-1","Court 4-1", "Court 4-2", "Court 5-1", "Total")
+plotOutcome <- caseOutcome 
+outcomeParty_colors <- c(
+  "Abated" = "#0047bd",  
+  "Dismissed" = "#a80092", 
+  "Ruled in Favor of Landlord" = "#042d33",   
+  "Other" = "#ed018c", 
+  "Ruled in Favor of Tenant" = "#008097",
+  'Unknown'='#ed683f'
+)
+chart_container <- htmltools::div(style = "display: flex; flex-wrap: wrap; justify-content: center; overflow-y: hidden; gap: 5px") 
+
+createLegendBox <- function(color, label) {
+  htmltools::div(
+    style = paste0("display: flex; align-items: center; margin-right: 15px;"),
+    htmltools::div(style = paste0("width: 20px; height: 20px; background-color: ", color, "; margin-right: 5px;")),
+    htmltools::span(label)
+  )
+}
+for (court in court_order) {
+  court_data <- plotOutcome %>% filter(jpCourt == court)%>% 
+    mutate(color = outcomeParty_colors[outcomeParty])
+    
+    hc<- highchart() %>%
+      hc_chart(type = "pie") %>% 
+      hc_add_series(
+        data = court_data,
+        hcaes(x = outcomeParty, 
+              y = round(perOutcome*100, 2),
+              color = color), 
+        name = 'Percent',
+        type = "pie",
+        dataLabels = list(enabled = FALSE),
+        tooltip = list(pointFormat = "{point.name}: <b>{point.y:.2f}%</b>"),
+        showInLegend=FALSE,
+        colorByPoint = TRUE
+        ) %>%
+      hc_legend(visible = FALSE)%>%
+      hc_title(text = paste(court),
+             style = list(fontSize = "15px", fontWeight = 'bold'))%>%
+    hc_add_theme(hc_cpal)%>%
+    hc_size(height=200, width = 200)
+
+    chart_container <- htmltools::tagAppendChild(chart_container, 
+                                                 htmltools::div(style = "width: 200px; height: 180px; margin: 5px;", hc)) 
+    }
+# 
+legend_container <- htmltools::div(
+  style = "display: flex; flex-wrap: wrap; justify-content: center; margin-top: 10px;"
+)
+
+# Add Legend Boxes to Legend Container
+for (reason in names(outcomeParty_colors)) {
+  legend_container <- htmltools::tagAppendChild(legend_container,
+                                               createLegendBox(outcomeParty_colors[reason], reason))
+}
+
+# Append Legend Container to Main Container
+chart_container <- htmltools::tagAppendChild(chart_container, legend_container)
+
+# Display the Final Chart Container
+chart_container
+
+#   ggplot(aes(x = "", fill=outcomeParty, y=perOutcome)) + 
+#   geom_bar(stat="identity") +
+#   geom_text(aes(label = ifelse(perOutcome >= 0.07, paste0(round(perOutcome*100, digits = 0), "%"), ""), x = 1.1),
+#             position = position_stack(vjust = 0.5),
+#             color = "#FFFFFF",
+#             size = 3.5,
+#             fontface = "bold") +
+#   coord_polar(theta = "y") +
+#   facet_grid(~jpCourt) +
+#   theme_cpal_print() +
+#   scale_fill_manual(values = palette_cpal_main) +
+#     labs(x = "",
+#        y = "") +
+#   remove_axis(axis = "x") +
+#   remove_ticks()
+# 
+# cpal_plot(zeroGrob(),
+#           cpal_title(string = "Across all observed cases, the judge ruled in favor of the landlord in 57% of cases and in favor of the tenant in 5% of cases.",
+#                      width = 90),
+#           plotOutcome, 
+#           cpal_logo_text(), 
+#           ncol = 1,
+#           heights = c(1, 3, 30, 2))
+```
+
+
+<br>
+
+::: column-margin
+<!-- Outcomes are rounded to the nearest whole number, so totals may not -->
+<!-- equal 100%. -->
+
+<!-- Values below 7% are not labeled on chart due to sizing limitation. -->
+
+<!-- In Summer 2022 across JP Courts 1-1, 3-1, and 5-1, the judge ruled in -->
+<!-- favor of the landlord in 72% of cases and in favor of the tenant in 3% -->
+<!-- of cases.  -->
+In Spring 2023 across JP Courts 1-1, 3-1, and 5-1, the judge
+ruled in favor of the landlord in 58% of cases and in favor of the
+tenant in 5% of cases. In 2024 across JP Courts listed, the judge
+ruled in favor of the landlord in 62% of cases and in favor of the
+tenant in 6% of cases.
+:::
+
+::: shadecontent
+{{< fa house-chimney size=lg title="Housing" >}} **Why this matters**:
+Evicted low-income renters face a host of consequences: eviction
+increases the risk of homelessness, elevates long-term residential
+instability, and increases emergency room use. Eviction is also a matter
+of public record and can appear on public consumer reports (even if a
+renter won an eviction case), so evicted renters have a harder time
+finding a new place to live. Rent or court fees may also go to
+collections, negatively impacting a renter’s credit score.
+:::
+
+<br>
+
+## However, appearing in court and having legal representation matters for outcomes. When tenants appeared for their hearings, cases were decided in favor of the landlord 54% of the time.
+
+**Case outcomes when tenant/defendant appeared versus when tenant/defendant did not appear (across all observations):**
+
+
+```{r, outcomes with appearance}
+#| fig-height: 4
+
+plotOutAp <- outcomeApp %>%
+  mutate(outcomeParty = factor(outcomeParty, levels = c("Ruled in Favor of Landlord", "Ruled in Favor of Tenant", "Abated", "Dismissed", "Other", "Unknown")),
+         defAppear = ifelse(defAppear == "Yes", "Tenant appeared", "Tenant did not appear"))# %>%
+highchart() %>%
+  hc_xAxis(categories = unique(plotOutAp$defAppear)) %>%
+  hc_yAxis(visible=FALSE) %>%
+  hc_add_series(data = plotOutAp, 
+                type = "bar", 
+                hcaes(x = defAppear, 
+                      y = round(100*perOutcome,2), 
+                      group = outcomeParty),
+                tooltip = list(pointFormat = "{series.name}: <b>{point.y:.2f}%</b>")) %>%
+  hc_chart(type = "bar") %>%
+  hc_plotOptions(bar = list(stacking = "normal"))%>%
+  hc_colors(palette_cpal_main)%>%
+    hc_add_theme(hc_cpal)
+
+
+#   ggplot(aes(x = defAppear, fill=outcomeParty, y=perOutcome)) +
+#   geom_bar(stat="identity", width = 0.7) +
+#   geom_text(aes(label = ifelse(perOutcome >= 0.04, paste0(round(perOutcome*100, digits = 0), "%"), "")),
+#             fontface = "bold",
+#             color = "#FFFFFF",
+#             position = position_stack(vjust = 0.5)) +
+#   theme_cpal_print() +
+#   scale_y_continuous(labels = scales::percent) +
+#   coord_flip() +
+#   scale_y_reverse() +
+#   scale_fill_manual(values = palette_cpal_main) +
+#   labs(x = "",
+#        y = "") +
+#   remove_axis(axis = "x") +
+#   remove_ticks()
+# 
+# cpal_plot(zeroGrob(),
+#           cpal_title(string = "Case outcomes when tenant/defendant appeared versus when tenant/defendant did not
+# appear (across all observations).",
+#                      width = 90),
+#           plotOutAp,
+#           cpal_logo_text(),
+#           ncol = 1,
+#           heights = c(1, 3, 30, 2))
+```
+
+
+## When tenants had legal representation, cases were decided in favor of the landlord 13% of the time.
+**Case outcomes when tenant/defendant had legal representation versus when tenant/defendant did not have legal representation (across all observations).**
+
+```{r, outcomes with representation}
+#| fig-height: 4
+
+plotRep <- outcomeRep %>%
+    mutate(outcomeParty = factor(outcomeParty, levels = c("Ruled in Favor of Landlord", "Ruled in Favor of Tenant", "Abated", "Dismissed", "Other", "Unknown"))) %>%
+  mutate(defRep = ifelse(str_detect(defRep, "Yes"), "With Legal Representation", "Without Legal Representation")) #%>%
+
+highchart() %>%
+  hc_xAxis(categories = unique(plotRep$defRep)) %>%
+  hc_yAxis(visible=FALSE) %>%
+  hc_add_series(data = plotRep, 
+                type = "bar", 
+                hcaes(x = defRep, 
+                      y = round(100*perOutcome,2), 
+                      group = outcomeParty),
+                tooltip = list(pointFormat = "{series.name}: <b>{point.y:.2f}%</b>")) %>%
+  hc_chart(type = "bar") %>%
+  hc_plotOptions(bar = list(stacking = "normal"))%>%
+  hc_colors(palette_cpal_main)%>%
+    hc_add_theme(hc_cpal)
+
+
+#   ggplot(aes(x = defRep, fill=outcomeParty, y=perOutcome)) + 
+#   geom_bar(stat="identity", width = 0.7) +
+#   geom_text(aes(label = ifelse(perOutcome >= 0.04, paste0(round(perOutcome*100, digits = 0), "%"), "")),
+#             fontface = "bold",
+#             color = "#FFFFFF",
+#             position = position_stack(vjust = 0.5)) +
+#   theme_cpal_print() +
+#   coord_flip() +
+#   scale_y_reverse() +
+#   scale_fill_manual(values = palette_cpal_main) +
+#   labs(x = "",
+#        y = "") +
+#   remove_axis(axis = "x") +
+#   remove_ticks()
+# 
+# cpal_plot(zeroGrob(),
+#           cpal_title(string = "Case outcomes when tenant/defendant had legal representation versus when tenant/defendant did not have legal representation (across all observations).",
+#                      width = 90),
+#           plotRep, 
+#           cpal_logo_text(), 
+#           ncol = 1,
+#           heights = c(1, 3, 30, 2))
+
+# evicReasonTime <- courtobs %>%
+#   filter(!is.na(jpCourt)) %>%
+#   mutate(evicClean = ifelse(str_detect(evicReason, ","), "Multiple Reasons", evicReason),
+#          observationMonth = ymd(observationDate), "%B %Y") %>%
+#   group_by(jpCourt, evicClean, observationMonth) %>%
+#   summarize(count = n()) %>%
+#   mutate(perCases = count/sum(count)) %>%
+#   ungroup(.) %>%
+#   arrange(observationMonth) %>%  # Sort chronologically
+  #mutate(observationMonth = format(observationMonth, "%B %Y"))
+  #rbind(., totReason)
+
+# highchart()%>%
+#   hc_add_series(data = evicReasonTime, 
+#                 type = 'line', 
+#                 hcaes(x = observationMonth, 
+#                       y = count, 
+#                       group = evicClean))%>%
+#   hc_xAxis(type = 'category',
+#            categories = unique(evicReasonTime$observationMonth)) %>% 
+#   hc_colors(palette_cpal_main)#%>%
+#   #hc_title(text='Payors for Clinic Visits Over Time')
+
+
+
+
+
+
+
+  
+```
+
+
+# About CPAL
+
+CPAL is a Dallas-based nonprofit organization committed to cutting child
+poverty in Dallas, Texas in half within a generation by (1) generating
+relevant data insights to break big problems into small, actionable
+ones, (2) facilitating cross-sector, collective action based on data
+insights, and (3) applying principles of human-centered design to solve
+problems in partnership with communities. One of CPAL’s five areas of
+focus is housing, and CPAL’s long-term aspiration is to ensure all
+Dallas families have access to stable housing without worry of an
+involuntary move.
+

@@ -1,5 +1,6 @@
 ---
-title: ""
+page-title: "Dallas Court Observation Project"
+display-title: ' ' 
 editor: 
   markdown: 
     wrap: 72
@@ -19,13 +20,6 @@ library(gridExtra)
 library(highcharter)
 library(dplyr)
 
-<<<<<<< Updated upstream
-libDB <- "C:/Users/Michael/CPAL Dropbox/"
-#libDB <- "/Users/anushachowdhury/CPAL Dropbox/"
-
-googlesheets4::gs4_auth(email = "michael@childpovertyactionlab.org")
-#googlesheets4::gs4_auth(email = "anusha@childpovertyactionlab.org")
-=======
 # libDB <- "C:/Users/Michael/CPAL Dropbox/"
 #libDB <- "C:/Users/taylo/CPAL Dropbox/"
 libDB <- "/Users/anushachowdhury/CPAL Dropbox/"
@@ -33,7 +27,6 @@ libDB <- "/Users/anushachowdhury/CPAL Dropbox/"
 # googlesheets4::gs4_auth(email = "michael@childpovertyactionlab.org")
 #googlesheets4::gs4_auth(email = "taylor@childpovertyactionlab.org")
 googlesheets4::gs4_auth(email = "anusha@childpovertyactionlab.org")
->>>>>>> Stashed changes
 
 courtobs <- read_sheet(ss = "https://docs.google.com/spreadsheets/d/1O9P06SgvZ_nRGc64W2OsSjyX9iCS_LkcsG9087HNTuk",
                                sheet = "Form Responses 1") %>%
@@ -62,12 +55,7 @@ courtobs <- read_sheet(ss = "https://docs.google.com/spreadsheets/d/1O9P06SgvZ_n
 ) %>%
   filter(!jpCourt %in% c("5-2", "3-2", "2-1", '2-2'),
          !is.na(jpCourt),
-<<<<<<< Updated upstream
          observationDate <= as.Date("2024-04-26")
-=======
-         observationDate <= as.Date("2024-04-20")
-      
->>>>>>> Stashed changes
          ) %>%
   mutate(jpCourt = paste("Court", jpCourt),
          observationDate = as.Date(observationDate, format = "%Y-%m-%d"))
@@ -90,11 +78,7 @@ totdays <- difftime(endDate, startDate, "days") %>%
 #evictions by year
 #2024
 totevic4 <- evictions%>%
-<<<<<<< Updated upstream
   filter(filed_date >= as.Date('2023-06-20') & filed_date < as.Date('2024-04-26'))
-=======
-  filter(filed_date >= as.Date('2023-11-01') & filed_date < as.Date('2024-04-20'))
->>>>>>> Stashed changes
 
 # most recent year (this year) (2023)
 totevic1 <- evictions %>%
@@ -147,11 +131,7 @@ totObsCases <- courtobs %>%
 
 #total number of cases scheduled by court in time period of court observations
 obsCourt <- evictions %>%
-<<<<<<< Updated upstream
   filter(appearance_date >= as.Date("2023-06-20") & appearance_date < as.Date("2024-04-26")) %>%
-=======
-  filter(appearance_date >= as.Date("2023-11-01") & appearance_date < as.Date("2024-04-20")) %>%
->>>>>>> Stashed changes
   filter(jpCourt %in% unique(courtobs$jpCourt)) %>%
   group_by(jpCourt) %>%
   summarize(totEvic = n()) %>%
@@ -543,8 +523,7 @@ hc_cpal <- hc_theme(
       )
 
 ```
-
-# Dallas Court Observation Project
+<h2 style="font-size:48px;">Dallas Court Observation Project</h2>
 **Eviction has a devastating impact on families:** involuntary
 displacement leads to greater material hardship, poorer health and
 avoidable healthcare costs for children and their mothers, negative
@@ -558,13 +537,8 @@ for mothers with children.
 `r format(max(totevic4$filed_date, na.rm = TRUE), "%B %d, %Y")`,
 `r prettyNum(nrow(totevic4), big.mark = ',')` evictions were filed in
 Dallas County, an average of `r avgevic3` per day.** This represents a
-<<<<<<< Updated upstream
 `r paste0(chgevic3, "%")` change over this same time period in 2023 and
 a `r paste0(chgevic1, "%")` change over the same time period in 2022.
-=======
-`r paste0(chgevic3, "%")` change over this same time period in 2022 and
-a `r paste0(chgevic1, "%")` change over the same time period in 2021.
->>>>>>> Stashed changes
 Evictions have been on the rise since the end of the CDC Eviction
 Moratorium in August 2021, and Dallas County realized its highest
 one-month filing total in at least five years in
@@ -641,8 +615,6 @@ flowchart TD
   
 ```
 
-<<<<<<< Updated upstream
-=======
 ```{r}
 
 # org_data <- data.frame(
@@ -679,7 +651,6 @@ flowchart TD
 #   ) %>%
 #   hc_title(text = "Company Organization Chart")
 ```
->>>>>>> Stashed changes
 # Project Background
 
 In spring 2021, the Child Poverty Action Lab (CPAL) launched a court
@@ -735,11 +706,7 @@ volunteers expanded to JP Court 4-2 for the first time in Spring
 ```{r, Cases Chart}
 #| fig-height: 4
 ##### highchart 1 #####
-<<<<<<< Updated upstream
 plotCases <- jpCasesObs24 %>%
-=======
-plotCases <- jpCasesObs %>%
->>>>>>> Stashed changes
   filter(!is.na(jpCourt) & obsCases > 1) %>%
   select(jpCourt, perAllCases) %>%
   mutate(perAntCases = 1-perAllCases) %>%
@@ -750,7 +717,6 @@ plotCases <- jpCasesObs %>%
   mutate(perCases=100*perCases)
 
 highchart()%>%
-<<<<<<< Updated upstream
   hc_chart(type = 'column')%>%
   hc_add_series(plotCases,
                 type = 'column',
@@ -772,26 +738,6 @@ highchart()%>%
   hc_tooltip(pointFormat = "{series.name} cases: {point.y:.2f}%") %>%
   hc_add_theme(hc_cpal)%>%
   hc_title(text = 'Percent of Cases Observed in 2024')
-=======
-  hc_chart(type = "column") %>%
-  hc_add_series(
-    plotCases,
-    type = "column",
-    mapping = hcaes(
-      x = jpCourt,
-      y = round(perCases, 2),  
-      group = type
-      ),
-    dataLabels = list(enabled = TRUE, format = "{point.y:.0f}%", style = list(fontWeight = "bold")))%>%
-  hc_plotOptions(column = list(borderWidth = 0)) %>%
-  hc_xAxis(categories = unique(plotCases$jpCourt), labels = list(enabled = TRUE)) %>%
-  hc_yAxis(title = list(text = ""), labels = list(format = "{value}%"), max = 100) %>%
-  hc_tooltip(pointFormat = "{series.name} Cases: {point.y:.2f}%") %>%
-  hc_colors(palette_cpal_main)%>%
-  hc_title(text = 'Percent of All Cases Observed by JP Court')%>%
-  hc_add_theme(hc_cpal)
-
->>>>>>> Stashed changes
 
 
 
@@ -1001,78 +947,8 @@ chart_container
 
 :::
 
-
-**Most eviction cases were due to nonpayment of rent.**
-
 ```{r, Cases by Reason}
-<<<<<<< Updated upstream
 
-=======
-#| fig-height: 4
-
-plotReason <- evicReason
-
-evicClean_colors <- c(
-  "Holdover/lease expiration" = "#0047bd",
-  "Multiple Reasons" = "#a80092",
-  "Non-payment of rent" = "#042d33",
-  "Unknown" = "#ed018c",
-  "Violated lease" = "#008097"
-  )
-
-chart_container <- htmltools::div(style = "display: flex; flex-wrap: wrap; justify-content: center; overflow-y: hidden; gap: 5px") 
-
-createLegendBox <- function(color, label) {
-  htmltools::div(
-    style = paste0("display: flex; align-items: center; margin-right: 15px;"),
-    htmltools::div(style = paste0("width: 20px; height: 20px; background-color: ", color, "; margin-right: 5px;")),
-    htmltools::span(label)
-  )
-}
-
-for (court in unique(plotReason$jpCourt)){
-  court_data <- plotReason %>% filter(jpCourt == court)%>%
-    mutate(color = evicClean_colors[evicClean])
-  hc<- highchart() %>%
-    hc_chart(type = "pie") %>%
-    hc_add_series(
-      data = court_data,
-      hcaes(x = evicClean,
-            y = round(perCases*100, 2),
-            color = color),
-      name = 'Percent',
-      type = "pie",
-      dataLabels = list(enabled = FALSE),
-      tooltip = list(pointFormat = "{point.name}: <b>{point.y:.2f}%</b>"),
-      showInLegend=TRUE,
-      colorByPoint = TRUE
-      ) %>%
-    hc_legend(enabled = FALSE)%>%
-    hc_title(text = paste(court),
-             style = list(fontSize = "15px"))%>%
-    hc_size(height=200, width = 200)%>%
-    hc_add_theme(hc_cpal)
-      
-    chart_container <- htmltools::tagAppendChild(chart_container, 
-                                                 htmltools::div(style = "width: 200px; height: 180px; margin: 5px;", hc)) 
-    }
-
-legend_container <- htmltools::div(
-  style = "display: flex; flex-wrap: wrap; justify-content: center; margin-top: 10px;"
-)
-
-
-for (reason in names(evicClean_colors)) {
-  legend_container <- htmltools::tagAppendChild(legend_container, 
-                                               createLegendBox(evicClean_colors[reason], reason))
-}
-
-
-chart_container <- htmltools::tagAppendChild(chart_container, legend_container)
-
-
-chart_container
->>>>>>> Stashed changes
 
 
   # ggplot(aes(x = "", fill=evicClean, y=perCases)) +
@@ -1125,16 +1001,10 @@ financial assistance to renters who have fallen behind on rent.
 
 ## 2024
 
-**Landlords or their representatives almost always appeared for the hearing, but tenants appeared less than half the time.**
-
 ```{r, Representation for Cases}
 #| fig-height: 5
 
-<<<<<<< Updated upstream
 plotAppear <- caseAppear24%>%
-=======
-plotAppear <- caseAppear%>%
->>>>>>> Stashed changes
   mutate(AppearPer=round(AppearPer*100, 2))
 highchart()%>%
   hc_chart(type = 'column')%>%
@@ -1143,18 +1013,12 @@ highchart()%>%
                 mapping = hcaes(
                   x = jpCourt,
                   y = AppearPer,
-<<<<<<< Updated upstream
                   group = type,
                   color = ifelse(jpCourt == "Total", 
                                  c('#4B1707','#ED683F')[match(type, unique(plotAppear$type))], 
                                  palette_cpal_main[match(type, unique(plotAppear$type))])),
                 color = c('#008097', '#042d33'),
                 dataLabels = list(enabled = TRUE, format = "{point.y:.0f}%", style = list(fontWeight = "bold")))%>%
-=======
-                  group = type
-                ),
-               dataLabels = list(enabled = TRUE, format = "{point.y:.0f}%", style = list(fontWeight = "bold")))%>%
->>>>>>> Stashed changes
   hc_xAxis(categories = plotAppear$jpCourt) %>%
   hc_yAxis(labels = list(format = "{value: .0f}%"), 
            max = 100) %>%
@@ -1162,10 +1026,6 @@ highchart()%>%
     dataLabels = list(enabled = TRUE, format = "{value:.0f}%")
   )) %>%
   hc_tooltip(pointFormat = "{series.name} cases: {point.y:.2f}%") %>%
-<<<<<<< Updated upstream
-=======
-  hc_colors(palette_cpal_main)%>%
->>>>>>> Stashed changes
   hc_add_theme(hc_cpal)
 
 #   ggplot(aes(x = type, y = AppearPer, fill = type)) +
@@ -1310,41 +1170,9 @@ highchart()%>%
 
 :::
 
-**Tenants rarely had legal representation, but representation has increased significantly since summer 2022.**
-
 ```{r, Legal Representation Tenants}
 #| fig-height: 5
-<<<<<<< Updated upstream
 
-=======
-plotDef <- defRepresent%>%
-  add_row(., tibble(jpCourt = "Court 4-2", legalRep = "Attorney present for tenant (Defendant)", count = 0, perRep = 0))%>%
-  group_by(jpCourt, legalRep)%>%
-  summarise(count = count, perRep = perRep)
-  
-
-
-#court_order <- c("Court 1-1", "Court 1-2", "Court 2-2", "Court 3-1", "Court 4-1", "Court 5-1", "Court 4-2", "Total" )
-
-highchart()%>%
-  hc_chart(type = "column") %>%
-  hc_add_series(
-    plotDef,
-    type = "column",
-    mapping = hcaes(
-      x = jpCourt,
-      y = round(100*perRep, 2),  
-      group = legalRep
-      ),
-    dataLabels = list(enabled = TRUE, format = "{point.y:.0f}%", style = list(fontWeight = "bold")))%>%
-  hc_plotOptions(column = list(borderWidth = 0)) %>%
-  hc_xAxis(categories = unique(plotDef$jpCourt), labels = list(enabled = TRUE)) %>%
-  hc_yAxis(title = list(text = ""), labels = list(format = "{value}%"), max = 100) %>%
-  hc_tooltip(pointFormat = "{series.name} cases: {point.y:.0f}%") %>%
-  hc_colors(palette_cpal_main)%>%
-  hc_add_theme(hc_cpal)
-
->>>>>>> Stashed changes
 #   ggplot(aes(x = legalRep, y = perRep, fill = legalRep)) +
 #   geom_bar(stat = "identity") +
 #   geom_text(aes(label = paste0(round(perRep*100, digits = 0), "%")),
@@ -1378,12 +1206,7 @@ highchart()%>%
 ::: column-margin
 <!-- \*In Summer 2022 across JP Courts 1-1, 3-1, and 5-1, 10% of tenants had -->
 <!-- legal representation.  -->
-<<<<<<< Updated upstream
 \*In Spring 2023 and 2024 across all JP Courts listed, 25% of tenants had legal representation.
-=======
-\*In Spring 2023 across JP Courts 1-1, 3-1, and 5-1,
-25% of tenants had legal representation.
->>>>>>> Stashed changes
 :::
 
 ::: shadecontent
@@ -1397,7 +1220,6 @@ case and remain housed. Attorneys may also help renters negotiate terms
 with their landlords, keep eviction judgments off their records, and
 navigate other housing supports, like rent relief.
 :::
-<<<<<<< Updated upstream
 <br>
 **A written Notice to Vacate is the legal first step to initiate an eviction, but a Notice to Vacate was confirmed in 53% of observed hearings in 2024. This is an improvement from 44% in 2023**
 
@@ -1409,13 +1231,6 @@ navigate other housing supports, like rent relief.
 #| fig-height: 5
 #no legend, better title
 plotntv <- ntv24 %>%
-=======
-**A written Notice to Vacate is the legal first step to initiate an eviction, but a Notice to Vacate was confirmed in 49% of all observed hearings.**
-```{r, notice to vacate}
-#| fig-height: 5
-#no legend, better title
-plotntv <- ntv %>%
->>>>>>> Stashed changes
   filter(noticeVacate == "Yes")
 highchart()%>%
   hc_chart(type = 'column')%>%
@@ -1425,27 +1240,17 @@ highchart()%>%
     name = 'Percentage of Cases with Written Notice Present',
     mapping = hcaes(
       x = jpCourt,
-<<<<<<< Updated upstream
       y = round(100*perntv, 2),
       color = ifelse(jpCourt == "Total", '#ED683F', '#008097')
       ),
     dataLabels = list(enabled = TRUE, format = "{point.y:.0f}%", style = list(fontWeight = "bold")),
     showInLegend = FALSE,
     colorByPoint = TRUE)%>%
-=======
-      y = round(100*perntv, 2)
-      ),
-    dataLabels = list(enabled = TRUE, format = "{point.y:.0f}%", style = list(fontWeight = "bold")))%>%
->>>>>>> Stashed changes
   hc_plotOptions(column = list(borderWidth = 0)) %>%
   hc_xAxis(categories = unique(plotntv$jpCourt), labels = list(enabled = TRUE)) %>%
   hc_yAxis(title = list(text = ""), labels = list(format = "{value}%"), max = 100) %>%
   hc_tooltip(pointFormat = "{series.name}: {point.y:.2f}%") %>%
-<<<<<<< Updated upstream
   #hc_colors(palette_cpal_main)%>%
-=======
-  hc_colors(palette_cpal_main)%>%
->>>>>>> Stashed changes
   hc_add_theme(hc_cpal)
 
 #   ggplot(aes(x = noticeVacate, y = perntv)) +
@@ -1516,11 +1321,7 @@ highchart()%>%
 <!-- \*In Summer 2022 across JP Courts 1-1, 3-1, and 5-1, a Notice to Vacate -->
 <!-- was confirmed 33% of the time.  -->
 \*In Spring 2023 across JP Courts 1-1, 3-1,
-<<<<<<< Updated upstream
 and 5-1, a Notice to Vacate was confirmed 44% of the time.
-=======
-and 5-1, a Notice to Vacate was confirmed 45% of the time.
->>>>>>> Stashed changes
 :::
 
 ::: shadecontent
@@ -1563,14 +1364,10 @@ observed dockets. Because not all cases in a single docket may have been
 observed, average length of time here is likely conservative – i.e.,
 average length of time per hearing is likely an overestimate.
 :::
-<<<<<<< Updated upstream
 
 <br>
 
 ## Across all observed cases, the judge ruled in favor of the landlord in 60% of cases and in favor of the tenant in 5% of cases.
-=======
-**Across all observed cases, the judge ruled in favor of the landlord in 60% of cases and in favor of the tenant in 5% of cases.**
->>>>>>> Stashed changes
 ```{r, eviction outcome}
 #| fig-height: 4
 court_order <- c("Court 1-1", "Court 1-2", 
@@ -1613,12 +1410,8 @@ for (court in court_order) {
         colorByPoint = TRUE
         ) %>%
       hc_legend(visible = FALSE)%>%
-<<<<<<< Updated upstream
       hc_title(text = paste(court),
              style = list(fontSize = "15px", fontWeight = 'bold'))%>%
-=======
-      hc_title(text = paste(court))%>%
->>>>>>> Stashed changes
     hc_add_theme(hc_cpal)%>%
     hc_size(height=200, width = 200)
 
@@ -1680,13 +1473,8 @@ chart_container
 <!-- of cases.  -->
 In Spring 2023 across JP Courts 1-1, 3-1, and 5-1, the judge
 ruled in favor of the landlord in 58% of cases and in favor of the
-<<<<<<< Updated upstream
 tenant in 5% of cases. In 2024 across JP Courts listed, the judge
 ruled in favor of the landlord in 62% of cases and in favor of the
-=======
-tenant in 5% of cases. In 2024, the judge
-ruled in favor of the landlord in 60% of cases and in favor of the
->>>>>>> Stashed changes
 tenant in 6% of cases.
 :::
 
@@ -1701,17 +1489,11 @@ finding a new place to live. Rent or court fees may also go to
 collections, negatively impacting a renter’s credit score.
 :::
 
-<<<<<<< Updated upstream
 <br>
 
 ## However, appearing in court and having legal representation matters for outcomes. When tenants appeared for their hearings, cases were decided in favor of the landlord 54% of the time.
 
 **Case outcomes when tenant/defendant appeared versus when tenant/defendant did not appear (across all observations):**
-=======
-#### However, appearing in court and having legal representation matters for outcomes. When tenants appeared for their hearings, cases were decided in favor of the landlord 54% of the time.
-
-**Case outcomes when tenant/defendant appeared versus when tenant/defendant did not appear (across all observations).**
->>>>>>> Stashed changes
 
 ```{r, outcomes with appearance}
 #| fig-height: 4
@@ -1760,11 +1542,7 @@ highchart() %>%
 #           heights = c(1, 3, 30, 2))
 ```
 
-<<<<<<< Updated upstream
 ## When tenants had legal representation, cases were decided in favor of the landlord 13% of the time.
-=======
-#### When tenants had legal representation, cases were decided in favor of the landlord 10% of the time.
->>>>>>> Stashed changes
 **Case outcomes when tenant/defendant had legal representation versus when tenant/defendant did not have legal representation (across all observations).**
 ```{r, outcomes with representation}
 #| fig-height: 4
@@ -1811,7 +1589,6 @@ highchart() %>%
 #           ncol = 1,
 #           heights = c(1, 3, 30, 2))
 
-<<<<<<< Updated upstream
 # evicReasonTime <- courtobs %>%
 #   filter(!is.na(jpCourt)) %>%
 #   mutate(evicClean = ifelse(str_detect(evicReason, ","), "Multiple Reasons", evicReason),
@@ -1841,13 +1618,6 @@ highchart() %>%
 
 
 
-=======
-highchart()%>%
-  hc_add_series(data = totevic3, type = 'area', hcaes(x = court, y = amount, group = court))%>%
-  hc_xAxis(categories = unique(totevic3$filed_date))%>%
-  hc_colors(palette_cpal_main)%>%
-  hc_title(text='Payors for Clinic Visits Over Time')
->>>>>>> Stashed changes
   
 ```
 
