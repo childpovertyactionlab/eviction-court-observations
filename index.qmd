@@ -170,9 +170,12 @@ jpCasesCty <- jpCasesObs %>%
   summarize(obsCases = sum(obsCases),
             totEvic = sum(totEvic)) %>%
   mutate(perAllCases = round(obsCases/totEvic, digits = 3))
-
+jpCasesCty24 <- jpCasesObs24 %>%
+  summarize(obsCases = sum(obsCases),
+            totEvic = sum(totEvic)) %>%
+  mutate(perAllCases = round(obsCases/totEvic, digits = 3))
 #case outcome by party filed in favor of by jp court
-caseOutcome <- courtobs %>%
+caseOutcome24 <- courtobs %>%
   filter(!is.na(jpCourt),
          observationDate >= as.Date("2023-06-20") & observationDate < as.Date("2024-04-26")) %>%
   mutate(outcomeParty = ifelse(str_detect(jpRuled, "Plaintiff"), "Ruled in Favor of Landlord",
@@ -193,9 +196,30 @@ caseOutcome <- courtobs %>%
   group_by(jpCourt) %>%
   mutate(perOutcome = count/sum(count)) %>%
   ungroup()
+caseOutcome23 <- courtobs %>%
+  filter(!is.na(jpCourt),
+         observationDate >= as.Date("2022-11-01") & observationDate < as.Date("2023-04-20")) %>%
+  mutate(outcomeParty = ifelse(str_detect(jpRuled, "Plaintiff"), "Ruled in Favor of Landlord",
+                                          ifelse(str_detect(jpRuled, "Defendant"), "Ruled in Favor of Tenant", 
+                                                 ifelse(str_detect(jpRuled, "abated"), "Abated",
+                                                        ifelse(str_detect(jpRuled, "dismissed"), "Dismissed", jpRuled))))) %>%
+  group_by(jpCourt, outcomeParty) %>%
+  summarize(count = n()) %>%
+  mutate(perOutcome = count/sum(count)) %>%
+  ungroup(.) %>%
+  group_by(outcomeParty) %>%
+  group_map(~ .x %>%
+          janitor::adorn_totals(),.keep = T) %>% 
+  bind_rows() %>%
+  mutate(test = lag(outcomeParty),
+         outcomeParty = ifelse(str_detect(outcomeParty, "Other|Dismissed|Abated|Ruled|Unknown"), outcomeParty, test)) %>%
+  select(-test) %>%
+  group_by(jpCourt) %>%
+  mutate(perOutcome = count/sum(count)) %>%
+  ungroup()
 
 #case outcome by appearance in court
-outcomeApp <- courtobs %>%
+outcomeApp24 <- courtobs %>%
   filter(!is.na(jpCourt),
          observationDate >= as.Date("2023-06-20") & observationDate < as.Date("2024-04-26")) %>%
   filter(defAppear != "Unknown") %>%
@@ -208,10 +232,35 @@ outcomeApp <- courtobs %>%
   mutate(perOutcome = count/sum(count)) %>%
   ungroup(.)
 
+outcomeApp23 <- courtobs %>%
+  filter(!is.na(jpCourt),
+         observationDate >= as.Date("2022-11-01") & observationDate < as.Date("2023-04-20")) %>%
+  filter(defAppear != "Unknown") %>%
+  mutate(outcomeParty = ifelse(str_detect(jpRuled, "Plaintiff"), "Ruled in Favor of Landlord",
+                                          ifelse(str_detect(jpRuled, "Defendant"), "Ruled in Favor of Tenant", 
+                                                 ifelse(str_detect(jpRuled, "abated"), "Abated",
+                                                        ifelse(str_detect(jpRuled, "dismissed"), "Dismissed", jpRuled))))) %>%
+  group_by(defAppear, outcomeParty) %>%
+  summarize(count = n()) %>%
+  mutate(perOutcome = count/sum(count)) %>%
+  ungroup(.)
+
 #case outcome by representation for tenant
-outcomeRep <- courtobs %>%
+outcomeRep24 <- courtobs %>%
   filter(!is.na(jpCourt),
          observationDate >= as.Date("2023-06-20") & observationDate < as.Date("2024-04-26")) %>%
+  filter(defRep == "Yes, an attorney was present for the defendant." | defRep == "No, the defendant did not have additional representation.") %>%
+  mutate(outcomeParty = ifelse(str_detect(jpRuled, "Plaintiff"), "Ruled in Favor of Landlord",
+                                          ifelse(str_detect(jpRuled, "Defendant"), "Ruled in Favor of Tenant", 
+                                                 ifelse(str_detect(jpRuled, "abated"), "Abated",
+                                                        ifelse(str_detect(jpRuled, "dismissed"), "Dismissed", jpRuled))))) %>%
+  group_by(defRep, outcomeParty) %>%
+  summarize(count = n()) %>%
+  mutate(perOutcome = count/sum(count)) %>%
+  ungroup(.)
+outcomeRep23 <- courtobs %>%
+  filter(!is.na(jpCourt),
+         observationDate >= as.Date("2022-11-01") & observationDate < as.Date("2023-04-20")) %>%
   filter(defRep == "Yes, an attorney was present for the defendant." | defRep == "No, the defendant did not have additional representation.") %>%
   mutate(outcomeParty = ifelse(str_detect(jpRuled, "Plaintiff"), "Ruled in Favor of Landlord",
                                           ifelse(str_detect(jpRuled, "Defendant"), "Ruled in Favor of Tenant", 
@@ -446,6 +495,20 @@ hearingtime <- courtobs %>%
   janitor::adorn_totals() %>%
   mutate(AvgCaseLength = SumDockLength/CasesObs) %>%
   select(-SumDockLength)#%>%
+hearingtime24 <- courtobs %>%
+  filter( observationDate >= as.Date("2023-06-20") & observationDate < as.Date("2024-04-26"))%>%
+  mutate(dockLength = docketEnd-docketStart) %>%
+  group_by(jpCourt, observationDate) %>%
+  summarize(CasesObs = n(),
+            AvgDockLength = mean(dockLength, na.rm=TRUE)) %>%
+  ungroup() %>%
+  group_by(jpCourt)%>%
+  summarize(CasesObs = sum(CasesObs),
+            SumDockLength = as.numeric(sum(AvgDockLength))) %>%
+  ungroup(.) %>%
+  janitor::adorn_totals() %>%
+  mutate(AvgCaseLength = SumDockLength/CasesObs) %>%
+  select(-SumDockLength)
   
   
 
@@ -494,7 +557,15 @@ jp11 <- jpCasesObs %>%
   filter(jpCourt == "Court 1-1") %>% 
   pull(obsCases)
 
+jp11_24 <- jpCasesObs24 %>% 
+  filter(jpCourt == "Court 1-1") %>% 
+  pull(obsCases)
+
 jp12 <- jpCasesObs %>% 
+  filter(jpCourt == "Court 1-2") %>% 
+  pull(obsCases)
+
+jp12_24 <- jpCasesObs24 %>% 
   filter(jpCourt == "Court 1-2") %>% 
   pull(obsCases)
 
@@ -502,11 +573,23 @@ jp31 <- jpCasesObs %>%
   filter(jpCourt == "Court 3-1") %>% 
   pull(obsCases)
 
+jp31_24 <- jpCasesObs24 %>% 
+  filter(jpCourt == "Court 3-1") %>% 
+  pull(obsCases)
+
 jp41 <- jpCasesObs %>% 
   filter(jpCourt == "Court 4-1") %>% 
   pull(obsCases)
 
+jp41_24 <- jpCasesObs24 %>% 
+  filter(jpCourt == "Court 4-1") %>% 
+  pull(obsCases)
+
 jp51 <- jpCasesObs %>% 
+  filter(jpCourt == "Court 5-1") %>% 
+  pull(obsCases)
+
+jp51_24 <- jpCasesObs24 %>% 
   filter(jpCourt == "Court 5-1") %>% 
   pull(obsCases)
 
@@ -521,6 +604,11 @@ hc_cpal <- hc_theme(
           )
         )
       )
+
+courtobs23 <- courtobs%>%
+  filter(observationDate >= as.Date("2022-11-01") & observationDate < as.Date("2023-04-20"))
+courtobs24 <- courtobs %>%
+  filter(observationDate >= as.Date("2023-06-20") & observationDate < as.Date("2024-04-26"))
 
 ```
 <h2 style="font-size:48px;">Dallas Court Observation Project</h2>
@@ -554,8 +642,16 @@ evicMonthsTime$yearFiled<- as.character(evicMonthsTime$yearFiled)
 
 evicMonths2019 <- evicMonthsTime %>%
   filter(yearFiled == '2019')
-evicMonthsTime <- evicMonthsTime %>%
-  filter(yearFiled != '2019')
+evicMonths2020 <- evicMonthsTime %>%
+  filter(yearFiled == '2020')
+evicMonths2021 <- evicMonthsTime %>%
+  filter(yearFiled == '2021')
+evicMonths2022 <- evicMonthsTime %>%
+  filter(yearFiled == '2022')
+evicMonths2023 <- evicMonthsTime %>%
+  filter(yearFiled == '2023')
+evicMonths2024 <- evicMonthsTime %>%
+  filter(yearFiled == '2024')
 
 evicMonthstotal <- evicMonthsTime %>%
   group_by(monthFiled, dateMonth) %>%  
@@ -575,12 +671,33 @@ highchart()%>%
                       y = totevic,
                       group = yearFiled),
                 color = '#FE9AD4')%>%
-  hc_add_series(data = evicMonthsTime,
+  hc_add_series(data = evicMonths2020,
                 type = 'line',
                 hcaes(x = dateMonth,
                       y = totevic,
                       group = yearFiled))%>%
-  
+  hc_add_series(data = evicMonths2021,
+                type = 'line',
+                hcaes(x = dateMonth,
+                      y = totevic,
+                      group = yearFiled),
+                visible = FALSE)%>%
+  hc_add_series(data = evicMonths2022,
+                type = 'line',
+                hcaes(x = dateMonth,
+                      y = totevic,
+                      group = yearFiled),
+                visible = FALSE)%>%
+  hc_add_series(data = evicMonths2023,
+                type = 'line',
+                hcaes(x = dateMonth,
+                      y = totevic,
+                      group = yearFiled))%>%
+  hc_add_series(data = evicMonths2024,
+                type = 'line',
+                hcaes(x = dateMonth,
+                      y = totevic,
+                      group = yearFiled))%>%
   hc_xAxis(type = 'category',
            categories = unique(evicMonthsTime$dateMonth))%>%
   hc_add_theme(hc_cpal)%>%
@@ -617,39 +734,7 @@ flowchart TD
 
 ```{r}
 
-# org_data <- data.frame(
-#   from = c("Tenant receives written Notice to Vacate.", 
-#            "CEO", 
-#            "CTO", 
-#            "CFO", 
-#            "CFO"),
-#   to = c("Tenant given 1 or more days to move out of rental depending on lease agreement.", 
-#          "CFO", 
-#          "Dev Manager", 
-#          "Accountant",
-#          "HR Manager")
-# )
-# org_data <- data.frame(
-#   from = c("CEO", "CEO", "CTO", "CFO", "CFO"),
-#   to = c("CTO", "CFO", "Dev Manager", "Accountant", "HR Manager")
-# )
-# highchart() %>%
-#   hc_chart(type = "organization") %>%
-#   hc_add_series(
-#     data = org_data, 
-#     name = "Organization Chart",
-#     keys = c("from", "to"), # Important to define 'from' and 'to' keys
-#     nodes = list( 
-#       list(id = "CEO", title = "Chief Executive Officer"),
-#       list(id = "CTO", title = "Chief Technology Officer"),
-#       list(id = "CFO", title = "Chief Financial Officer"),
-#       list(id = "Dev Manager", title = "Development Manager"),
-#       list(id = "Accountant", title = "Accountant"),
-#       list(id = "HR Manager", title = "HR Manager")
-#     ),
-#     nodeWidth = 150
-#   ) %>%
-#   hc_title(text = "Company Organization Chart")
+
 ```
 # Project Background
 
@@ -688,21 +773,24 @@ and cleans the data, as needed.
 
 # Case Observation Findings
 
-From `r format(startDate, "%B %d, %Y")` through
-`r format(endDate, "%B %d, %Y")`, `r smuStudents` SMU Law student
-volunteers observed **`r formattable::comma(totObsCases, digits = 0)`
-cases**: `r formattable::comma(jp11, digits = 0)` in Justice of the
-Peace Court 1-1, `r formattable::comma(jp12, digits = 0)` in Justice of
-the Peace Court 1-2, `r formattable::comma(jp31, digits = 0)` in Justice
-of the Peace Court 3-1, `r formattable::comma(jp41, digits = 0)` in
+From `r format(as.Date("2023-06-20"), "%B %d, %Y")` through
+`r format(as.Date("2024-04-26"), "%B %d, %Y")`, `r smuStudents` SMU Law student
+volunteers observed **`r formattable::comma(nrow(courtobs24), digits = 0)`
+cases**: `r formattable::comma(jp11_24, digits = 0)` in Justice of the
+Peace Court 1-1, `r formattable::comma(jp12_24, digits = 0)` in Justice of
+the Peace Court 1-2, `r formattable::comma(jp31_24, digits = 0)` in Justice
+of the Peace Court 3-1, `r formattable::comma(jp41_24, digits = 0)` in
 Justice of the Peace Court 4-1, and
-`r formattable::comma(jp51, digits = 0)` in Justice of the Peace Court
-5-1. The `r formattable::comma(totObsCases, digits = 0)` observed cases
-represent **`r paste0(jpCasesCty$perAllCases*100, "% coverage")`** of
+`r formattable::comma(jp51_24, digits = 0)` in Justice of the Peace Court
+5-1. The `r formattable::comma(nrow(courtobs24), digits = 0)` observed cases
+represent **`r paste0(jpCasesCty24$perAllCases*100, "% coverage")`** of
 all initially scheduled hearings across the five courts.. Student
 volunteers expanded to JP Court 4-2 for the first time in Spring
 2024, hence the lower coverage rate.
 
+::: {.panel-tabset}
+
+## Summer '23 - Spring '24
 ```{r, Cases Chart}
 #| fig-height: 4
 ##### highchart 1 #####
@@ -737,7 +825,23 @@ highchart()%>%
   )) %>%
   hc_tooltip(pointFormat = "{series.name} cases: {point.y:.2f}%") %>%
   hc_add_theme(hc_cpal)%>%
-  hc_title(text = 'Percent of Cases Observed in 2024')
+  hc_title(text = "Percent of Cases Observed in Summer '23 - Spring '24 Cycle")
+
+jpCasesObs24 %>%
+  ungroup(.) %>%
+  transmute('JP Court' = jpCourt,
+            'Observed Cases' = scales::number(obsCases, big.mark = ","),
+            'Share of Total Observed Cases (%)' = scales::percent(perObsCases, accuracy = 0.1),
+            'Scheduled Hearings*' = scales::number(totEvic, big.mark = ","),
+            'Observed Cases by Court (%)' = scales::percent(perAllCases, accuracy = 0.1)) %>%
+    datatable(options = list(paging = FALSE,
+                           searching = FALSE,
+                           info = FALSE
+                           ),
+            rownames = FALSE) %>%
+  formatStyle(columns = colnames(.), fontWeight = 'bold', `text-align` = 'left') %>%
+  formatStyle(columns = colnames(.), fontFamily = "Poppins")
+
 
 
 
@@ -773,8 +877,45 @@ highchart()%>%
 
 ```
 
-```{r, Cases Table}
-jpCasesObs24 %>%
+
+## Fall '22 - Spring '23
+```{r}
+#| fig-height: 4
+
+plotCases23 <- jpCasesObs23 %>%
+  filter(!is.na(jpCourt) & obsCases > 1) %>%
+  select(jpCourt, perAllCases) %>%
+  mutate(perAntCases = 1-perAllCases) %>%
+  pivot_longer(cols = c("perAllCases", "perAntCases")) %>%
+  rename(perCases = value) %>%
+  mutate(type = ifelse(name == "perAllCases", "Observed", "Not Observed")) %>%
+  select(-name) %>%
+  mutate(perCases=100*perCases)
+
+highchart()%>%
+  hc_chart(type = 'column')%>%
+  hc_add_series(plotCases23,
+                type = 'column',
+                mapping = hcaes(
+                  x = jpCourt,
+                  y = round(perCases, 2),
+                  group = type,
+                  color = ifelse(jpCourt == "Total", 
+                                 c('#4B1707','#ED683F')[match(type, unique(plotCases$type))], 
+                                 palette_cpal_main[match(type, unique(plotCases$type))])),
+                color = c('#008097', '#042d33'),
+                dataLabels = list(enabled = TRUE, format = "{point.y:.0f}%", style = list(fontWeight = "bold")))%>%
+  hc_xAxis(categories = unique(plotCases$jpCourt)) %>%
+  hc_yAxis(labels = list(format = "{value: .0f}%"), 
+           max = 100) %>%
+  hc_plotOptions(column = list(
+    dataLabels = list(enabled = TRUE, format = "{value:.0f}%")
+  )) %>%
+  hc_tooltip(pointFormat = "{series.name} cases: {point.y:.2f}%") %>%
+  hc_add_theme(hc_cpal)%>%
+  hc_title(text = "Percent of Cases Observed in Fall '22 - Spring '23 Cycle")
+
+jpCasesObs23 %>%
   ungroup(.) %>%
   transmute('JP Court' = jpCourt,
             'Observed Cases' = scales::number(obsCases, big.mark = ","),
@@ -782,12 +923,20 @@ jpCasesObs24 %>%
             'Scheduled Hearings*' = scales::number(totEvic, big.mark = ","),
             'Observed Cases by Court (%)' = scales::percent(perAllCases, accuracy = 0.1)) %>%
     datatable(options = list(paging = FALSE,
-                           searching = FALSE,
+                           searching  = FALSE,
                            info = FALSE
                            ),
             rownames = FALSE) %>%
   formatStyle(columns = colnames(.), fontWeight = 'bold', `text-align` = 'left') %>%
   formatStyle(columns = colnames(.), fontFamily = "Poppins")
+  
+
+```
+
+:::
+
+```{r, Cases Table}
+
 ```
 
 ::: column-margin
@@ -802,14 +951,14 @@ number of cases heard during a docket.
 
 <br>
 
-## Across 2023-2024 observed cases, we found:
+## Across Summer '23 - Spring '24 observed cases, we found:
 
 
 **Most eviction cases were due to nonpayment of rent.**
 
 ::: {.panel-tabset}
 
-## 2024
+## Summer '23 - Spring '24
 
 ```{r}
 plotReason <- evicReason24
@@ -875,7 +1024,7 @@ chart_container <- htmltools::tagAppendChild(chart_container, legend_container)
 chart_container
 ```
 
-## 2023
+## Fall '22 - Spring '23
 
 ```{r}
 plotReason <- evicReason23
@@ -922,11 +1071,11 @@ for (court in unique(plotReason$jpCourt)){
     hc_legend(enabled = FALSE)%>%
     hc_title(text = paste(court),
              style = list(fontSize = "15px", fontWeight = 'bold'))%>%
-    hc_size(height=70, width = 200)%>%
+    hc_size(height=60, width = 200)%>%
     hc_add_theme(hc_cpal)
       
     chart_container <- htmltools::tagAppendChild(chart_container, 
-                                                 htmltools::div(style = "width: 200px; height: 220px; margin: 5px;", hc)) 
+                                                 htmltools::div(style = "width: 200px; height: 180px; margin: 5px;", hc)) 
     }
 
 legend_container <- htmltools::div(
@@ -999,7 +1148,7 @@ financial assistance to renters who have fallen behind on rent.
 
 ::: {.panel-tabset}
 
-## 2024
+## Summer '23 - Spring '24
 
 ```{r, Representation for Cases}
 #| fig-height: 5
@@ -1056,7 +1205,7 @@ highchart()%>%
 #           heights = c(1, 3, 30, 2))
 ```
 
-## 2023
+## Fall '22 - Spring '23
 
 ```{r}
 #| fig-height: 5
@@ -1103,7 +1252,7 @@ proceed, or have already determined to move out.
 
 ::: {.panel-tabset}
 
-## 2024
+## Summer '23 - Spring '24
 
 ```{r}
 plotDef24 <- defRepresent24%>%
@@ -1136,7 +1285,7 @@ highchart()%>%
 
 ```
 
-## 2023
+## Fall '22 - Spring '23
 
 ```{r}
 plotDef23 <- defRepresent23%>%
@@ -1225,7 +1374,7 @@ navigate other housing supports, like rent relief.
 
 ::: {.panel-tabset}
 
-## 2024
+## Summer '23 - Spring '24
 
 ```{r, notice to vacate}
 #| fig-height: 5
@@ -1283,7 +1432,7 @@ highchart()%>%
 
 ```
 
-## 2023
+## Fall '22 - Spring '23
 
 ```{r}
 #| fig-height: 5
@@ -1338,10 +1487,10 @@ opportunity to dismiss the eviction suit.
 
 <br>
 
-## Across all cases, the average length of time for each hearing was less than 4 minutes.
+## Across all cases in the Summer '23 - Spring '24 Cycle, the average length of time for each hearing was less than 4 minutes.
 
 ```{r, Average Hearing Time}
-hearingtime %>%
+hearingtime24 %>%
   transmute('JP Court' = jpCourt,
             'Cases Observed' = scales::number(CasesObs, big.mark = ","),
             'Average Case Length' = paste(round(AvgCaseLength/60, digits = 1), "Minutes")) %>%
@@ -1368,12 +1517,16 @@ average length of time per hearing is likely an overestimate.
 <br>
 
 ## Across all observed cases, the judge ruled in favor of the landlord in 60% of cases and in favor of the tenant in 5% of cases.
+
+::: {.panel-tabset}
+
+## Summer '23 - Spring '24
 ```{r, eviction outcome}
 #| fig-height: 4
 court_order <- c("Court 1-1", "Court 1-2", 
                  #"Court 2-2",
                  "Court 3-1","Court 4-1", "Court 4-2", "Court 5-1", "Total")
-plotOutcome <- caseOutcome 
+plotOutcome <- caseOutcome24
 outcomeParty_colors <- c(
   "Abated" = "#0047bd",  
   "Dismissed" = "#a80092", 
@@ -1459,7 +1612,77 @@ chart_container
 #           ncol = 1,
 #           heights = c(1, 3, 30, 2))
 ```
+## Fall '22 - Spring '23
 
+```{r}
+#| fig-height: 5
+court_order <- c("Court 1-1", "Court 1-2", 
+                 #"Court 2-2",
+                 "Court 3-1","Court 4-1", "Court 5-1", "Total")
+plotOutcome23 <- caseOutcome23 
+outcomeParty_colors <- c(
+  "Abated" = "#0047bd",  
+  "Dismissed" = "#a80092", 
+  "Ruled in Favor of Landlord" = "#042d33",   
+  "Other" = "#ed018c", 
+  "Ruled in Favor of Tenant" = "#008097",
+  'Unknown'='#ed683f'
+)
+chart_container <- htmltools::div(style = "display: flex; flex-wrap: wrap; justify-content: center; overflow-y: hidden; gap: 5px") 
+
+createLegendBox <- function(color, label) {
+  htmltools::div(
+    style = paste0("display: flex; align-items: center; margin-right: 15px;"),
+    htmltools::div(style = paste0("width: 20px; height: 20px; background-color: ", color, "; margin-right: 5px;")),
+    htmltools::span(label)
+  )
+}
+for (court in court_order) {
+  court_data <- plotOutcome23 %>% filter(jpCourt == court)%>% 
+    mutate(color = outcomeParty_colors[outcomeParty])
+    
+    hc<- highchart() %>%
+      hc_chart(type = "pie") %>% 
+      hc_add_series(
+        data = court_data,
+        hcaes(x = outcomeParty, 
+              y = round(perOutcome*100, 2),
+              color = color), 
+        name = 'Percent',
+        type = "pie",
+        dataLabels = list(enabled = FALSE),
+        tooltip = list(pointFormat = "{point.name}: <b>{point.y:.2f}%</b>"),
+        showInLegend=FALSE,
+        colorByPoint = TRUE
+        ) %>%
+      hc_legend(visible = FALSE)%>%
+      hc_title(text = paste(court),
+             style = list(fontSize = "15px", fontWeight = 'bold'))%>%
+    hc_add_theme(hc_cpal)%>%
+    hc_size(height=60, width = 200)
+
+    chart_container <- htmltools::tagAppendChild(chart_container, 
+                                                 htmltools::div(style = "width: 200px; height: 180px; margin: 5px;", hc)) 
+    }
+# 
+legend_container <- htmltools::div(
+  style = "display: flex; flex-wrap: wrap; justify-content: center; margin-top: 10px;"
+)
+
+# Add Legend Boxes to Legend Container
+for (reason in names(outcomeParty_colors)) {
+  legend_container <- htmltools::tagAppendChild(legend_container,
+                                               createLegendBox(outcomeParty_colors[reason], reason))
+}
+
+# Append Legend Container to Main Container
+chart_container <- htmltools::tagAppendChild(chart_container, legend_container)
+
+# Display the Final Chart Container
+chart_container
+```
+
+:::
 <br>
 
 ::: column-margin
@@ -1495,10 +1718,14 @@ collections, negatively impacting a renter’s credit score.
 
 **Case outcomes when tenant/defendant appeared versus when tenant/defendant did not appear (across all observations):**
 
+::: {.panel-tabset}
+
+## Summer '23 - Spring '24
+
 ```{r, outcomes with appearance}
 #| fig-height: 4
 
-plotOutAp <- outcomeApp %>%
+plotOutAp <- outcomeApp24 %>%
   mutate(outcomeParty = factor(outcomeParty, levels = c("Ruled in Favor of Landlord", "Ruled in Favor of Tenant", "Abated", "Dismissed", "Other", "Unknown")),
          defAppear = ifelse(defAppear == "Yes", "Tenant appeared", "Tenant did not appear"))# %>%
 highchart() %>%
@@ -1541,13 +1768,41 @@ highchart() %>%
 #           ncol = 1,
 #           heights = c(1, 3, 30, 2))
 ```
+## Fall '22 - Spring '23
+
+```{r}
+#| fig-height: 4
+plotOutAp <- outcomeApp23 %>%
+  mutate(outcomeParty = factor(outcomeParty, levels = c("Ruled in Favor of Landlord", "Ruled in Favor of Tenant", "Abated", "Dismissed", "Other", "Unknown")),
+         defAppear = ifelse(defAppear == "Yes", "Tenant appeared", "Tenant did not appear"))# %>%
+highchart() %>%
+  hc_xAxis(categories = unique(plotOutAp$defAppear)) %>%
+  hc_yAxis(visible=FALSE) %>%
+  hc_add_series(data = plotOutAp, 
+                type = "bar", 
+                hcaes(x = defAppear, 
+                      y = round(100*perOutcome,2), 
+                      group = outcomeParty),
+                tooltip = list(pointFormat = "{series.name}: <b>{point.y:.2f}%</b>")) %>%
+  hc_chart(type = "bar") %>%
+  hc_plotOptions(bar = list(stacking = "normal"))%>%
+  hc_colors(palette_cpal_main)%>%
+    hc_add_theme(hc_cpal)
+
+```
+
+:::
 
 ## When tenants had legal representation, cases were decided in favor of the landlord 13% of the time.
 **Case outcomes when tenant/defendant had legal representation versus when tenant/defendant did not have legal representation (across all observations).**
+
+::: {.panel-tabset}
+
+## Summer '23 - Spring '24
 ```{r, outcomes with representation}
 #| fig-height: 4
 
-plotRep <- outcomeRep %>%
+plotRep <- outcomeRep24 %>%
     mutate(outcomeParty = factor(outcomeParty, levels = c("Ruled in Favor of Landlord", "Ruled in Favor of Tenant", "Abated", "Dismissed", "Other", "Unknown"))) %>%
   mutate(defRep = ifelse(str_detect(defRep, "Yes"), "With Legal Representation", "Without Legal Representation")) #%>%
 
@@ -1620,7 +1875,30 @@ highchart() %>%
 
   
 ```
+## Fall '22 - Spring '23
 
+```{r}
+#| fig-height: 4
+plotRep23 <- outcomeRep23 %>%
+    mutate(outcomeParty = factor(outcomeParty, levels = c("Ruled in Favor of Landlord", "Ruled in Favor of Tenant", "Abated", "Dismissed", "Other", "Unknown"))) %>%
+  mutate(defRep = ifelse(str_detect(defRep, "Yes"), "With Legal Representation", "Without Legal Representation")) #%>%
+
+highchart() %>%
+  hc_xAxis(categories = unique(plotRep23$defRep)) %>%
+  hc_yAxis(visible=FALSE) %>%
+  hc_add_series(data = plotRep23, 
+                type = "bar", 
+                hcaes(x = defRep, 
+                      y = round(100*perOutcome,2), 
+                      group = outcomeParty),
+                tooltip = list(pointFormat = "{series.name}: <b>{point.y:.2f}%</b>")) %>%
+  hc_chart(type = "bar") %>%
+  hc_plotOptions(bar = list(stacking = "normal"))%>%
+  hc_colors(palette_cpal_main)%>%
+    hc_add_theme(hc_cpal)
+```
+
+:::
 # About CPAL
 
 CPAL is a Dallas-based nonprofit organization committed to cutting child
