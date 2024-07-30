@@ -175,6 +175,15 @@ jpCasesCty24 <- jpCasesObs24 %>%
             totEvic = sum(totEvic)) %>%
   mutate(perAllCases = round(obsCases/totEvic, digits = 3))
 #case outcome by party filed in favor of by jp court
+caseOutcome<- courtobs %>%
+  filter(!is.na(jpCourt))%>%
+  mutate(outcomeParty = ifelse(str_detect(jpRuled, "Plaintiff"), "Ruled in Favor of Landlord",
+                               ifelse(str_detect(jpRuled, "Defendant"), "Ruled in Favor of Tenant", 
+                                      ifelse(str_detect(jpRuled, "abated"), "Abated",
+                                             ifelse(str_detect(jpRuled, "dismissed"), "Dismissed", jpRuled)))))%>%
+  group_by(observationDate, jpCourt, outcomeParty)%>%
+  summarise(n= n())
+
 caseOutcome24 <- courtobs %>%
   filter(!is.na(jpCourt),
          observationDate >= as.Date("2023-06-20") & observationDate < as.Date("2024-04-26")) %>%
@@ -551,6 +560,15 @@ evicReason23 <- courtobs %>%
   mutate(perCases = count/sum(count)) %>%
   ungroup(.) %>%
   rbind(., totReason)
+
+#non payment of rent 
+npr <- courtobs %>%
+  mutate(evicClean = ifelse(str_detect(evicReason, ","), "Multiple Reasons", evicReason)) %>%
+  filter(!is.na(jpCourt),
+         evicClean == 'Non-payment of rent')%>%
+  group_by(observationDate, jpCourt)%>%
+  summarise(n=n())
+
   
 ##### Text Inputs #####
 jp11 <- jpCasesObs %>% 
@@ -1096,9 +1114,45 @@ chart_container
 
 :::
 
-```{r, Cases by Reason}
+```{r}
+#| fig-height: 5
 
+desired_order <- c(
+  "November 2022", "December 2022", "January 2023", "February 2023", "March 2023", "April 2023",
+  "May 2023", "June 2023", "July 2023", "August 2023", "September 2023",
+  "October 2023", "November 2023", "December 2023", "January 2024", "February 2024",
+  "March 2024", "April 2024"
+)
+nprTimeTotal <- npr %>%
+  mutate(monthYear = format(ymd(observationDate), "%B %Y"))%>%
+  group_by(monthYear)%>%
+  summarise(n = sum(n))%>%
+  mutate(monthYear = factor(monthYear, levels = desired_order)) %>%
+  arrange(monthYear)
+nprTimeCourt <- npr %>%
+  mutate(monthYear = format(ymd(observationDate), "%B %Y"))%>%
+  group_by(monthYear, jpCourt)%>%
+  summarise(n = sum(n))%>%
+  mutate(monthYear = factor(monthYear, levels = desired_order)) %>%
+  arrange(monthYear)
 
+highchart()%>%
+  hc_chart(type = 'line')%>%
+  hc_add_series(data = nprTimeTotal,
+                type = 'line',
+                name = 'Total Non-Payment of Rent',
+                hcaes(x = monthYear,
+                      y = n))%>%
+  hc_add_series(data = nprTimeCourt,
+                type = 'line',
+                hcaes(x = monthYear,
+                      y = n,
+                      group = jpCourt),
+                visible = FALSE)%>%
+  hc_xAxis(type = 'category')%>%
+  hc_add_theme(hc_cpal)%>%
+  hc_colors(palette_cpal_deut)%>%
+  hc_title(text = list('Total Non-Payment of Rent Evictions over Time'))
 
   # ggplot(aes(x = "", fill=evicClean, y=perCases)) +
   # geom_bar(stat="identity") +
@@ -1683,6 +1737,51 @@ chart_container
 ```
 
 :::
+
+```{r}
+#| fig-height: 5
+
+caseOutcome <- caseOutcome%>%
+  mutate(monthYear = format(ymd(observationDate), "%B %Y"))%>%
+  group_by(monthYear, jpCourt, outcomeParty)%>%
+  summarise(n = sum(n))%>%
+  mutate(monthYear = factor(monthYear, levels = desired_order)) %>%
+  arrange(monthYear)
+caseOutcomeTotal <- caseOutcome %>%
+  group_by(monthYear, outcomeParty)%>%
+  summarise(n=sum(n))%>%
+  mutate(monthYear = factor(monthYear, levels = desired_order),
+         jpCourt = 'Total') %>%
+  arrange(monthYear)
+
+caseOutcome<- bind_rows(caseOutcome, caseOutcomeTotal)
+
+drilldown_data <- caseOutcome %>%
+  group_by(jpCourt, outcomeParty) %>%
+  nest() %>%
+  ungroup() %>%
+  mutate(
+    id = jpCourt,
+    data = map(data, function(df) {
+      list_parse2(df %>% select(monthYear, n))
+    })
+  )
+
+highchart()%>%
+  hc_chart(type='line')%>%
+  hc_add_series(data = caseOutcomeTotal,
+                type = 'line',
+                hcaes(x = monthYear,
+                      y = n,
+                      group = outcomeParty))%>%
+  hc_xAxis(type = 'category')%>%
+  hc_colors(palette_cpal_main)%>%
+  hc_add_theme(hc_cpal)%>%
+  hc_title(text = 'Case Outcomes Over Time')
+
+
+```
+
 <br>
 
 ::: column-margin
