@@ -1752,7 +1752,8 @@ caseOutcomeTotal <- caseOutcome %>%
   summarise(n=sum(n))%>%
   mutate(monthYear = factor(monthYear, levels = desired_order),
          jpCourt = 'Total') %>%
-  arrange(monthYear)
+  arrange(monthYear)%>%
+  mutate(color = outcomeParty_colors[outcomeParty]) 
 
 caseOutcome<- bind_rows(caseOutcome, caseOutcomeTotal)
 
@@ -1767,17 +1768,19 @@ drilldown_data <- caseOutcome %>%
     })
   )
 
+
 highchart()%>%
   hc_chart(type='line')%>%
   hc_add_series(data = caseOutcomeTotal,
                 type = 'line',
                 hcaes(x = monthYear,
                       y = n,
-                      group = outcomeParty))%>%
+                      group = outcomeParty),
+                color = outcomeParty_colors)%>%
   hc_xAxis(type = 'category')%>%
-  hc_colors(palette_cpal_main)%>%
   hc_add_theme(hc_cpal)%>%
-  hc_title(text = 'Case Outcomes Over Time')
+  hc_colors(outcomeParty_colors) %>% 
+  hc_title(text = 'Total Case Outcomes Over Time')
 
 
 ```
