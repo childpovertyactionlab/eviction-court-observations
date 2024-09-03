@@ -20,6 +20,7 @@ library(gridExtra)
 library(highcharter)
 library(dplyr)
 
+
 # libDB <- "C:/Users/Michael/CPAL Dropbox/"
 #libDB <- "C:/Users/taylo/CPAL Dropbox/"
 libDB <- "/Users/anushachowdhury/CPAL Dropbox/"
@@ -63,9 +64,19 @@ courtobs <- read_sheet(ss = "https://docs.google.com/spreadsheets/d/1O9P06SgvZ_n
 #dallas county evictions dataset
 evictions <- rio::import(paste0(libDB, "Data Library/Dallas County/Eviction Records/Data/Dallas County Eviction Master/EvictionRecords_Master.csv")) %>%
   mutate(jpCourt = str_remove(court, "Court  "))%>%
-         #filed_date = mdy(filed_date),
-         #appearance_date = mdy(appearance_date)) %>%
-  filter(!jpCourt %in% c("5-2", "3-2", "NA"))
+  filter(!jpCourt %in% c("5-2", "3-2", "NA"))%>%
+  distinct()%>%
+  filter(!is.na(X) & !is.na(Y)) %>%
+  st_as_sf(coords = c("X", "Y"), crs = 4326) %>%
+  st_join(
+    tigris::counties(state = "TX", cb = TRUE) %>%
+      filter(NAME == "Dallas") %>%
+      st_transform(crs = 4326),
+    join = st_within
+  ) %>%
+  filter(!is.na(NAME)) %>%  
+  as.data.frame() %>%
+  select(-geometry)
 
 #court observation dates
 startDate <- min(courtobs$observationDate, na.rm = TRUE)
@@ -506,6 +517,20 @@ hearingtime <- courtobs %>%
   select(-SumDockLength)#%>%
 hearingtime24 <- courtobs %>%
   filter( observationDate >= as.Date("2023-06-20") & observationDate < as.Date("2024-04-26"))%>%
+  mutate(dockLength = docketEnd-docketStart) %>%
+  group_by(jpCourt, observationDate) %>%
+  summarize(CasesObs = n(),
+            AvgDockLength = mean(dockLength, na.rm=TRUE)) %>%
+  ungroup() %>%
+  group_by(jpCourt)%>%
+  summarize(CasesObs = sum(CasesObs),
+            SumDockLength = as.numeric(sum(AvgDockLength))) %>%
+  ungroup(.) %>%
+  janitor::adorn_totals() %>%
+  mutate(AvgCaseLength = SumDockLength/CasesObs) %>%
+  select(-SumDockLength)
+hearingtime23 <- courtobs %>%
+  filter(observationDate >= as.Date("2022-11-01") & observationDate < as.Date("2023-04-20"))%>%
   mutate(dockLength = docketEnd-docketStart) %>%
   group_by(jpCourt, observationDate) %>%
   summarize(CasesObs = n(),
@@ -1614,6 +1639,10 @@ opportunity to dismiss the eviction suit.
 
 ## Across all cases in the Summer '23 - Spring '24 Observation Cycle, the average length of time for each hearing was less than 4 minutes.
 
+::: {.panel-tabset}
+
+## Summer '23 - Spring '24
+
 ```{r, Average Hearing Time}
 hearingtime24 %>%
   transmute('JP Court' = jpCourt,
@@ -1627,6 +1656,23 @@ hearingtime24 %>%
   formatStyle(columns = colnames(.), fontWeight = 'bold', `text-align` = 'left') %>%
   formatStyle(columns = colnames(.), fontFamily = "Poppins")
 ```
+
+## Fall '22 - Spring '23
+
+```{r}
+hearingtime23 %>%
+  transmute('JP Court' = jpCourt,
+            'Cases Observed' = scales::number(CasesObs, big.mark = ","),
+            'Average Case Length' = paste(round(AvgCaseLength, digits = 1), "Minutes")) %>%
+  datatable(options = list(paging = FALSE,
+                           searching = FALSE,
+                           info = FALSE
+                           ),
+            rownames = FALSE) %>%
+  formatStyle(columns = colnames(.), fontWeight = 'bold', `text-align` = 'left') %>%
+  formatStyle(columns = colnames(.), fontFamily = "Poppins")
+```
+:::
 
 ::: column-margin
 Average hearing length calculated by (1) counting the number of cases
