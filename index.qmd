@@ -89,15 +89,15 @@ totdays <- difftime(endDate, startDate, "days") %>%
 #evictions by year
 #2024
 totevic4 <- evictions%>%
-  filter(filed_date >= as.Date('2023-06-20') & filed_date < as.Date('2024-04-26'))
+  filter(filed_date >= as.Date('2023-06-20') & filed_date < as.Date('2024-04-25'))
 
 # most recent year (this year) (2023)
 totevic1 <- evictions %>%
-  filter(filed_date >= as.Date("2022-11-01") & filed_date < as.Date("2023-04-20"))
+  filter(filed_date >= as.Date("2022-06-20") & filed_date < as.Date("2023-04-25"))
 
 #last year(2022)
 totevic2 <- evictions %>%
-  filter(filed_date >= as.Date("2021-11-01") & filed_date < as.Date("2022-04-20"))
+  filter(filed_date >= as.Date("2021-06-20") & filed_date < as.Date("2022-04-25"))
 
 # oldest year (two years ago) (2021)
 totevic3 <- evictions %>%
@@ -113,7 +113,7 @@ avgevic1 <- round(nrow(totevic1)/totdays, digits = 1)
 avgevic2 <- round(nrow(totevic2)/totdays, digits = 1)
 
 #percent change in evictions this year (2024)
-chgevic3 <- round(((nrow(totevic4)-nrow(totevic1))/nrow(totevic1))*100, digits = 1)
+chgevic3 <-abs(round(((nrow(totevic4)-nrow(totevic1))/nrow(totevic1))*100, digits = 1))
 #percent change in evictions this year (2023)
 chgevic1 <- round(((nrow(totevic1)-nrow(totevic2))/nrow(totevic2))*100, digits = 1)
 #percent change in evictions last year (2022)
@@ -690,7 +690,7 @@ for mothers with children.
 `r format(max(totevic4$filed_date, na.rm = TRUE), "%B %d, %Y")`,
 `r prettyNum(nrow(totevic4), big.mark = ',')` evictions were filed in
 Dallas County, an average of `r avgevic3` per day.** This represents a
-`r paste0(chgevic3, "%")` increase over this same time period in 2023 and
+`r paste0(chgevic3, "%")` decrease over this same time period in 2023 and
 a `r paste0(chgevic1, "%")` increase over the same time period in 2022.
 Although eviction filings rose rapidly after the end of the CDC Eviction Moratorium in August 2021, filings moderated in 2023 and the first half of 2024: monthly filings in Dallas County over the past 18 months have largely been below pre-pandemic (2019) filing counts.
 
