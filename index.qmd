@@ -692,7 +692,7 @@ for mothers with children.
 Dallas County, an average of `r avgevic3` per day.** This represents a
 `r paste0(chgevic3, "%")` increase over this same time period in 2023 and
 a `r paste0(chgevic1, "%")` increase over the same time period in 2022.
-Although eviction filings rose rapidly after the end of the CDC Eviction Moratorium in August 2023, filings moderated in 2023 and the first half of 2024: monthly filings in Dallas County over the past 18 months have largely been below pre-pandemic (2019) filing counts.
+Although eviction filings rose rapidly after the end of the CDC Eviction Moratorium in August 2021, filings moderated in 2023 and the first half of 2024: monthly filings in Dallas County over the past 18 months have largely been below pre-pandemic (2019) filing counts.
 
 ```{r}
 #| fig-height: 4
