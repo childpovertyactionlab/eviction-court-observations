@@ -675,6 +675,66 @@ courtobs23 <- courtobs%>%
 courtobs24 <- courtobs %>%
   filter(observationDate >= as.Date("2023-06-20") & observationDate < as.Date("2024-04-26"))
 
+deac <- read_sheet("https://docs.google.com/spreadsheets/d/11X91mVG7XSTDk3fjb8gCiyXDToh80yyvrVdLJiZOpOw/edit?gid=480254842#gid=480254842", col_types = "c") %>%
+  rename(caseNumber = case_number,
+         observationDate = court_date,
+         plaintiffName = plaintiff,
+         plaintiffDesignee = plaintiff_present,
+         plaintiffRep = plaintiff_rep,
+         defName = defendant,
+         defAppear = defendant_present,
+         defRep = defendant_rep,
+         evicReason = reason, 
+         noticeVacate = ntv,
+         jpRuled = outcome,
+         # totalOwned = amount, #???
+         jpCourt = court,
+         docketStart = docket_start_time,
+         docketEnd = docket_end_time,
+         caseType = case_type,
+         noticeConfirm = ntv_confirm,
+         outcomeOther = outcome_other,
+         otherNotes = notes)%>%
+  filter(!jpCourt %in% c("5-2", "3-2", "2-1", '2-2'),
+         !is.na(jpCourt),
+         # observationDate <= as.Date("2024-04-26")
+         ) %>%
+  mutate(jpCourt = paste("Court", jpCourt),
+         observationDate = as.Date(observationDate, format = "%Y-%m-%d"),
+         # totalOwned = as.numeric(totalOwned)
+         )
+  
+reference_date <- "1899-12-30"
+deac$docketStart <- paste(reference_date, deac$docketStart)  # Combine with reference date
+deac$docketEnd <- paste(reference_date, deac$docketEnd)  # Combine with reference date
+
+# Convert the combined datetime strings to POSIXct
+deac$docketStart <- as.POSIXct(deac$docketStart, format="%Y-%m-%d %I:%M:%S %p", tz="UTC")
+deac$docketEnd <- as.POSIXct(deac$docketEnd, format="%Y-%m-%d %I:%M:%S %p", tz="UTC")
+
+deac <- deac %>% anti_join(courtobs)
+
+
+jpCasesDeac <- deac %>%
+  group_by(jpCourt) %>%
+  summarize(obsCases = n()) %>%
+  mutate(perObsCases = obsCases/sum(obsCases)) %>%
+  ungroup(.) %>%
+  left_join(., obsCourt) %>%
+  janitor::adorn_totals() %>%
+  mutate(perAllCases = obsCases/totEvic)
+
+evicReasonDeac <- deac %>%
+  filter(!is.na(jpCourt)) %>%
+  mutate(evicClean = ifelse(str_detect(evicReason, ","), "Multiple Reasons", evicReason)) %>%
+  group_by(jpCourt, evicClean) %>%
+  summarize(count = n()) %>%
+  mutate(perCases = count/sum(count)) %>%
+  ungroup(.) %>%
+  rbind(., totReason)
+
+
+
 ```
 <h2 style="font-size:48px;">Dallas Court Observation Project</h2>
 **Eviction has a devastating impact on families:** involuntary
@@ -713,6 +773,8 @@ evicMonths2023 <- evicMonthsTime %>%
   filter(yearFiled == '2023')
 evicMonths2024 <- evicMonthsTime %>%
   filter(yearFiled == '2024')
+evicMonths2025 <- evicMonthsTime %>%
+  filter(yearFiled == '2025')
 
 evicMonthstotal <- evicMonthsTime %>%
   group_by(monthFiled, dateMonth) %>%  
@@ -759,6 +821,11 @@ highchart()%>%
                 hcaes(x = dateMonth,
                       y = totevic,
                       group = yearFiled))%>%
+  hc_add_series(data = evicMonths2025,
+                type = 'line',
+                hcaes(x = dateMonth,
+                      y = totevic,
+                      group = yearFiled))%>%
   hc_xAxis(type = 'category',
            categories = unique(evicMonthsTime$dateMonth))%>%
   hc_add_theme(hc_cpal)%>%
@@ -768,30 +835,6 @@ highchart()%>%
 
 # Eviction Court Observation Process
 <br>
-
-```{r}
-# %%| fig-width: 9
-# %%| fig-height: 12
-# flowchart TD
-#   A(Tenant receives written Notice to Vacate.) --> B(Tenant given 1 or more days to move out <br>of rental depending on lease agreement.);
-#   B --> C{{Tenant moves out of rental or <br>resolves issue with the landlord.}}
-#   B ----> D(Tenant does not leave rental within <br>time frame dictated by Notice to Vacate.)
-#   D --> E(Landlord files eviction suit with <br>their local JP Precinct.)
-#   E --> F(Hearing is scheduled at least 10 days <br>after eviction filing is made.)
-#   F --> G(Case is heard at JP court.)
-#   G --> H(((Eviction Judgement)))
-#   H --> I{{Case is dismissed.}}
-#   H --> J{{Ruled in favor of the tenant.}}
-#   H --> K(Ruled in favor of the landlord.)
-#   H --> L(Case is abated or rescheduled.)
-#   H --> M(Other outcome.)
-#   K --> N(Tenant may appeal the case within 5 days.)
-#   K ----> O(The tenant does not appeal and <br>fails to move out.)
-#   O --> P(Landlord may obtain a Writ of Possession <br>from the Justice of the Peace.)
-#   P --> Q(Constable posts a 24-hour notice before executing writ.)
-#   Q --> R{{Constable executes writ and begins removing the tenant's property.}}
-#   
-```
 
 ```{r, results = 'asis'}
 
@@ -905,6 +948,59 @@ all initially scheduled hearings across the five courts.
 
 ::: {.panel-tabset}
 
+## DEAC Cases
+```{r}
+plotDeacCases <- jpCasesDeac %>%
+  filter(!is.na(jpCourt) & obsCases > 1) %>%
+  select(jpCourt, perAllCases) %>%
+  mutate(perAntCases = 1-perAllCases) %>%
+  pivot_longer(cols = c("perAllCases", "perAntCases")) %>%
+  rename(perCases = value) %>%
+  mutate(type = ifelse(name == "perAllCases", "Observed", "Not Observed")) %>%
+  select(-name) %>%
+  mutate(perCases=100*perCases)
+
+highchart()%>%
+  hc_chart(type = 'column')%>%
+  hc_add_series(plotDeacCases,
+                type = 'column',
+                mapping = hcaes(
+                  x = jpCourt,
+                  y = round(perCases, 2),
+                  group = type,
+                  color = ifelse(jpCourt == "Total", 
+                                 c('#4B1707','#ED683F')[match(type, unique(plotDeacCases$type))], 
+                                 palette_cpal_main[match(type, unique(plotDeacCases$type))])),
+                color = c('#008097', '#042d33'),
+                dataLabels = list(enabled = TRUE, format = "{point.y:.0f}%", style = list(fontWeight = "bold")))%>%
+  hc_xAxis(categories = unique(plotDeacCases$jpCourt)) %>%
+  hc_yAxis(labels = list(format = "{value: .0f}%"), 
+           max = 100) %>%
+  hc_plotOptions(column = list(
+    dataLabels = list(enabled = TRUE, format = "{value:.0f}%")
+  )) %>%
+  hc_tooltip(pointFormat = "{series.name} cases: {point.y:.2f}%") %>%
+  hc_add_theme(hc_cpal)%>%
+  hc_title(text = "Percent of Cases Observed in Summer '23 - Spring '24 Cycle")
+
+jpCasesDeac %>%
+  ungroup(.) %>%
+  transmute('JP Court' = jpCourt,
+            'Observed Cases' = scales::number(obsCases, big.mark = ","),
+            'Share of Total Observed Cases (%)' = scales::percent(perObsCases, accuracy = 0.1),
+            'Scheduled Hearings*' = scales::number(totEvic, big.mark = ","),
+            'Observed Cases by Court (%)' = scales::percent(perAllCases, accuracy = 0.1)) %>%
+    datatable(options = list(paging = FALSE,
+                           searching = FALSE,
+                           info = FALSE
+                           ),
+            rownames = FALSE) %>%
+  formatStyle(columns = colnames(.), fontWeight = 'bold', `text-align` = 'left') %>%
+  formatStyle(columns = colnames(.), fontFamily = "Poppins")
+
+
+```
+
 ## Summer '23 - Spring '24
 ```{r, Cases Chart}
 #| fig-height: 4
@@ -958,37 +1054,6 @@ jpCasesObs24 %>%
   formatStyle(columns = colnames(.), fontFamily = "Poppins")
 
 
-
-
-# ggplot(aes(x = type, y = perCases, fill = type)) +
-# geom_bar(stat = "identity") +
-# geom_text(aes(label = ifelse(perCases > 0.05, paste0(round(perCases*100, digits = 0), "%"), "")),
-#           position = position_stack(vjust = 0.5),
-#           fontface = "bold",
-#           color = "white") +
-# geom_text(aes(label = ifelse(perCases <= 0.05, paste0(round(perCases*100, digits = 0), "%"), "")),
-#           nudge_y = 0.05,
-#           fontface = "bold",
-#           color = "black") +
-# geom_rect(aes(xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf,),
-#           linewidth = 1.5,
-#           data = ~ subset(., jpCourt == "Total"),
-#           colour = "black", fill = NA, inherit.aes = FALSE) +
-# theme_cpal_print() +
-# facet_grid(~jpCourt) +
-# scale_y_continuous(labels = scales::percent) +
-# scale_fill_manual(values = palette_cpal_main) +
-# labs(x = "",
-#      y = "") +
-# remove_axis(axis = "x") +
-# remove_ticks()
-# 
-# cpal_plot(zeroGrob(),
-#           cpal_title("Percent of All Cases Observed by JP Court"),
-#           plotCases,
-#           cpal_logo_text(),
-#           ncol = 1,
-#           heights = c(1, 3, 30, 2))
 
 ```
 
@@ -1050,9 +1115,6 @@ jpCasesObs23 %>%
 
 :::
 
-```{r, Cases Table}
-
-```
 
 ::: column-margin
 \*The scheduled hearings indicator was calculated based on the hearing
@@ -1072,6 +1134,13 @@ number of cases heard during a docket.
 **Most eviction cases were due to nonpayment of rent.**
 
 ::: {.panel-tabset}
+
+## DEAC Cases
+```{r}
+
+
+
+```
 
 ## Summer '23 - Spring '24
 
