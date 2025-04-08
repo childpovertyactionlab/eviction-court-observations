@@ -142,7 +142,19 @@ totObsCases <- courtobs %>%
 
 #total number of cases scheduled by court in time period of court observations
 obsCourt <- evictions %>%
+  # filter(appearance_date >= as.Date("2023-06-20") & appearance_date < as.Date("2024-04-26")) %>%
+  filter(jpCourt %in% unique(courtobs$jpCourt)) %>%
+  group_by(jpCourt) %>%
+  summarize(totEvic = n()) %>%
+  ungroup(.)
+obsCourt24 <- evictions %>%
   filter(appearance_date >= as.Date("2023-06-20") & appearance_date < as.Date("2024-04-26")) %>%
+  filter(jpCourt %in% unique(courtobs$jpCourt)) %>%
+  group_by(jpCourt) %>%
+  summarize(totEvic = n()) %>%
+  ungroup(.)
+obsCourt23 <- evictions %>%
+  filter(appearance_date >= as.Date("2022-11-01") & appearance_date < as.Date("2023-04-20")) %>%
   filter(jpCourt %in% unique(courtobs$jpCourt)) %>%
   group_by(jpCourt) %>%
   summarize(totEvic = n()) %>%
@@ -163,7 +175,7 @@ jpCasesObs24 <- courtobs %>%
   summarize(obsCases = n()) %>%
   mutate(perObsCases = obsCases/sum(obsCases)) %>%
   ungroup(.) %>%
-  left_join(., obsCourt) %>%
+  left_join(., obsCourt24) %>%
   janitor::adorn_totals() %>%
   mutate(perAllCases = obsCases/totEvic)
 jpCasesObs23 <- courtobs %>%
@@ -172,7 +184,7 @@ jpCasesObs23 <- courtobs %>%
   summarize(obsCases = n()) %>%
   mutate(perObsCases = obsCases/sum(obsCases)) %>%
   ungroup(.) %>%
-  left_join(., obsCourt) %>%
+  left_join(., obsCourt23) %>%
   janitor::adorn_totals() %>%
   mutate(perAllCases = obsCases/totEvic)
 
@@ -695,9 +707,9 @@ deac <- read_sheet("https://docs.google.com/spreadsheets/d/11X91mVG7XSTDk3fjb8gC
          noticeConfirm = ntv_confirm,
          outcomeOther = outcome_other,
          otherNotes = notes)%>%
-  filter(!jpCourt %in% c("5-2", "3-2", "2-1", '2-2'),
+  filter(#!jpCourt %in% c("5-2", "3-2", "2-1", '2-2'),
          !is.na(jpCourt),
-         # observationDate <= as.Date("2024-04-26")
+         observationDate >= as.Date("2024-09-01")
          ) %>%
   mutate(jpCourt = paste("Court", jpCourt),
          observationDate = as.Date(observationDate, format = "%Y-%m-%d"),
@@ -712,34 +724,105 @@ deac$docketEnd <- paste(reference_date, deac$docketEnd)  # Combine with referenc
 deac$docketStart <- as.POSIXct(deac$docketStart, format="%Y-%m-%d %I:%M:%S %p", tz="UTC")
 deac$docketEnd <- as.POSIXct(deac$docketEnd, format="%Y-%m-%d %I:%M:%S %p", tz="UTC")
 
+duplicateCases <- deac %>%
+  group_by(caseNumber) %>%
+  summarise(n = n())
+
+casesByCourtDeac <- deac %>%
+  group_by(jpCourt) %>%
+  summarise(n = n()) %>%
+  mutate(per = round(n/sum(n)*100, 2))%>%
+  janitor::adorn_totals()
+
+deacFuture <- deac %>%
+  filter(observationDate > "2025-01-31")
+write.csv(deacFuture, "data/Cases after January 2025.csv")
+deac <- deac %>%
+  filter(observationDate < "2025-12-01")
+
 # deac <- deac %>% anti_join(courtobs)
-deac <- deac %>% anti_join(courtobs, by = "caseNumber")
-# duplicates <- deac %>%
-#   filter(caseNumber %in% courtobs$caseNumber) %>%
-#   group_by(jpCourt) %>%
-#   summarise(n = n())%>%
-#   mutate(percent = (n / sum(n)) * 100) %>%
-#   janitor::adorn_totals()
+# deac <- deac %>% anti_join(courtobs, by = "caseNumber")
+duplicates <- deac %>%
+  filter(caseNumber %in% courtobs$caseNumber) #%>%
+  # group_by(jpCourt) %>%
+  # summarise(n = n())%>%
+  # mutate(percent = (n / sum(n)) * 100) %>%
+  # janitor::adorn_totals()
 # write.csv(duplicates, "data/DEAC and Court Obs Overlap.csv")
 
+obsCourtDeac <- evictions %>%
+  # filter(appearance_date >= as.Date("2022-11-01") & appearance_date < as.Date("2023-04-20")) %>%
+  filter(jpCourt %in% unique(courtobs$jpCourt)) %>%
+  group_by(jpCourt) %>%
+  summarize(totEvic = n()) %>%
+  ungroup(.)
 
 jpCasesDeac <- deac %>%
   group_by(jpCourt) %>%
   summarize(obsCases = n()) %>%
   mutate(perObsCases = obsCases/sum(obsCases)) %>%
   ungroup(.) %>%
-  left_join(., obsCourt) %>%
+  left_join(., obsCourtDeac) %>%
   janitor::adorn_totals() %>%
   mutate(perAllCases = obsCases/totEvic)
 
+totReasonDeac <- deac %>%
+  filter(!is.na(jpCourt),
+         defAppear == "Yes") %>%
+  mutate(evicClean = ifelse(str_detect(evicReason, ","), "Multiple Reasons", evicReason),
+         evicClean = case_when(
+           is.na(evicClean) ~ "NA",
+           evicClean == "Holdover" ~ "Holdover/lease expiration",
+           evicClean == "Lease expired" ~ "Holdover/lease expiration",
+           evicClean == "Other" ~ "Unknown",
+           evicClean == "LV" ~ "Violated lease",
+           TRUE ~ evicClean)) %>%
+  group_by(evicClean) %>%
+  summarize(count = n()) %>%
+  mutate(jpCourt = "Total",
+         perCases = count/sum(count)) %>%
+  ungroup(.)
+
 evicReasonDeac <- deac %>%
-  filter(!is.na(jpCourt)) %>%
-  mutate(evicClean = ifelse(str_detect(evicReason, ","), "Multiple Reasons", evicReason)) %>%
+  filter(!is.na(jpCourt),
+         defAppear == "Yes") %>%
+  mutate(evicClean = ifelse(str_detect(evicReason, ","), "Multiple Reasons", evicReason),
+         evicClean = case_when(
+           is.na(evicClean) ~ "NA",
+           evicClean == "Holdover" ~ "Holdover/lease expiration",
+           evicClean == "Lease expired" ~ "Holdover/lease expiration",
+           evicClean == "Other" ~ "Unknown",
+           evicClean == "LV" ~ "Violated lease",
+           TRUE ~ evicClean
+           )) %>%
   group_by(jpCourt, evicClean) %>%
   summarize(count = n()) %>%
   mutate(perCases = count/sum(count)) %>%
   ungroup(.) %>%
-  rbind(., totReason)
+  rbind(., totReasonDeac)
+
+evicReasonAppear <- deac%>%
+  filter(!is.na(jpCourt),
+         defAppear == "Yes") %>%
+  mutate(evicClean = ifelse(str_detect(evicReason, ","), "Multiple Reasons", evicReason),
+         evicClean = case_when(
+           is.na(evicClean) ~ "NA",
+           evicClean == "Holdover" ~ "Holdover/lease expiration",
+           evicClean == "Lease expired" ~ "Holdover/lease expiration",
+           evicClean == "Other" ~ "Unknown",
+           evicClean == "LV" ~ "Violated lease",
+           TRUE ~ evicClean
+           )) %>%
+  group_by(#jpCourt, 
+           evicClean, #defAppear
+           observer
+           ) %>%
+  summarize(count = n()) %>%
+  mutate(perCases = count/sum(count))#%>%
+  # ungroup(.) %>%
+  # rbind(., totReasonDeac)
+write.csv(evicReasonAppear, "data/Eviction Reason Observer Breakdown.csv")
+
 
 defAppearDeac <- deac %>%
   filter(!is.na(jpCourt),
@@ -777,7 +860,8 @@ defRepresentDeac <- deac %>%
          # observationDate >= as.Date("2023-06-20") & observationDate < as.Date("2024-04-26")
          ) %>%
   mutate(legalRep = ifelse(defRep == "Yes, an attorney was present for the defendant.", "Attorney present for tenant (Defendant)", "No attorney present for tenant")) %>%
-  group_by(jpCourt, legalRep) %>%
+  group_by(jpCourt, 
+           legalRep) %>%
   summarize(count = n()) %>%
   mutate(perRep = count/sum(count)) %>%
   ungroup(.) %>%
@@ -791,6 +875,30 @@ defRepresentDeac <- deac %>%
   group_by(jpCourt) %>%
   mutate(perRep = count/sum(count)) %>%
   ungroup()
+
+defRepresentDeacCsv <- deac %>%
+  filter(!is.na(jpCourt),
+         defAppear == "Yes",
+         # observationDate >= as.Date("2023-06-20") & observationDate < as.Date("2024-04-26")
+         ) %>%
+  mutate(legalRep = ifelse(defRep == "Yes, an attorney was present for the defendant.", "Attorney present for tenant (Defendant)", "No attorney present for tenant")) %>%
+  group_by(#jpCourt, 
+           legalRep, observer) %>%
+  summarize(count = n()) %>%
+  mutate(perRep = count/sum(count))
+  # mutate(perRep = count/sum(count)) %>%
+  # ungroup(.) %>%
+  # group_by(legalRep) %>%
+  # group_map(~ .x %>%
+  #         janitor::adorn_totals(),.keep = T) %>% 
+  # bind_rows() %>%
+  # mutate(test = lag(legalRep),
+  #        legalRep = ifelse(str_detect(legalRep, "tenant"), legalRep, test)) %>%
+  # select(-test) %>%
+  # group_by(jpCourt) %>%
+  # mutate(perRep = count/sum(count)) %>%
+  # ungroup()
+write.csv(defRepresentDeacCsv, "data/Defendant Representation Observer Breakdown.csv")
 
 ntvDeac <- deac %>%
   filter(!is.na(noticeVacate),
@@ -883,6 +991,11 @@ defRepAppear <- deac %>%
   group_by(defRep, defAppear) %>%
   summarise(n = n(),
             percent = n/sum(n))
+
+observers <- deac %>% group_by(observer) %>%
+  summarise(n=n())
+
+
 
 
 ```
@@ -1296,7 +1409,8 @@ evicClean_colors <- c(
   "Multiple Reasons" = "#a80092",
   "Non-payment of rent" = "#042d33",
   "Unknown" = "#ed018c",
-  "Violated lease" = "#008097"
+  "Violated lease" = "#008097",
+  "NA" = "#eaca2d"
   )
 
 chart_container <- htmltools::div(style = "display: flex; flex-wrap: wrap; justify-content: center; overflow-y: hidden; gap: 5px") 

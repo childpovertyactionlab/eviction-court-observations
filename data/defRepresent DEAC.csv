@@ -1,0 +1,26 @@
+"","jpCourt","legalRep","count","perRep"
+"1","Court 1-1","Attorney present for tenant (Defendant)",393,0.535422343324251
+"2","Court 1-2","Attorney present for tenant (Defendant)",57,0.377483443708609
+"3","Court 2-1","Attorney present for tenant (Defendant)",27,0.45
+"4","Court 2-2","Attorney present for tenant (Defendant)",70,0.875
+"5","Court 3-2","Attorney present for tenant (Defendant)",4,0.025974025974026
+"6","Court 5-1","Attorney present for tenant (Defendant)",99,0.5
+"7","Court 5-2","Attorney present for tenant (Defendant)",36,0.620689655172414
+"8","Total","Attorney present for tenant (Defendant)",686,0.465084745762712
+"9","Court 1-1","No attorney present for tenant",114,0.155313351498638
+"10","Court 1-2","No attorney present for tenant",20,0.132450331125828
+"11","Court 2-1","No attorney present for tenant",14,0.233333333333333
+"12","Court 2-2","No attorney present for tenant",2,0.025
+"13","Court 3-1","No attorney present for tenant",30,1
+"14","Court 3-2","No attorney present for tenant",150,0.974025974025974
+"15","Court 5-1","No attorney present for tenant",18,0.0909090909090909
+"16","Court 5-2","No attorney present for tenant",21,0.362068965517241
+"17","Total","No attorney present for tenant",369,0.250169491525424
+"18","Court 1-1",NA,227,0.309264305177112
+"19","Court 1-2",NA,74,0.490066225165563
+"20","Court 2-1",NA,19,0.316666666666667
+"21","Court 2-2",NA,8,0.1
+"22","Court 4-2",NA,10,1
+"23","Court 5-1",NA,81,0.409090909090909
+"24","Court 5-2",NA,1,0.0172413793103448
+"25","Total",NA,420,0.284745762711864

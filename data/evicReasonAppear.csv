@@ -1,0 +1,36 @@
+"","jpCourt","evicClean","count","perCases"
+"1","Court 1-1","Holdover/lease expiration",6,0.00974025974025974
+"2","Court 1-1","NA",81,0.131493506493506
+"3","Court 1-1","Non-payment of rent",505,0.819805194805195
+"4","Court 1-1","Unknown",19,0.0308441558441558
+"5","Court 1-1","Violated lease",5,0.00811688311688312
+"6","Court 1-2","Holdover/lease expiration",2,0.0148148148148148
+"7","Court 1-2","NA",54,0.4
+"8","Court 1-2","Non-payment of rent",74,0.548148148148148
+"9","Court 1-2","Unknown",3,0.0222222222222222
+"10","Court 1-2","Violated lease",2,0.0148148148148148
+"11","Court 2-1","NA",5,0.108695652173913
+"12","Court 2-1","Non-payment of rent",35,0.760869565217391
+"13","Court 2-1","Unknown",4,0.0869565217391304
+"14","Court 2-1","Violated lease",2,0.0434782608695652
+"15","Court 2-2","NA",18,0.257142857142857
+"16","Court 2-2","Non-payment of rent",48,0.685714285714286
+"17","Court 2-2","Unknown",3,0.0428571428571429
+"18","Court 2-2","Violated lease",1,0.0142857142857143
+"19","Court 3-1","Multiple Reasons",1,0.0333333333333333
+"20","Court 3-1","Non-payment of rent",28,0.933333333333333
+"21","Court 3-1","Unknown",1,0.0333333333333333
+"22","Court 3-2","Multiple Reasons",1,0.0263157894736842
+"23","Court 3-2","Non-payment of rent",35,0.921052631578947
+"24","Court 3-2","Unknown",1,0.0263157894736842
+"25","Court 3-2","Violated lease",1,0.0263157894736842
+"26","Court 4-2","Non-payment of rent",10,1
+"27","Court 5-1","Holdover/lease expiration",1,0.00568181818181818
+"28","Court 5-1","NA",44,0.25
+"29","Court 5-1","Non-payment of rent",122,0.693181818181818
+"30","Court 5-1","Unknown",6,0.0340909090909091
+"31","Court 5-1","Violated lease",3,0.0170454545454545
+"32","Court 5-2","Multiple Reasons",1,0.0454545454545455
+"33","Court 5-2","NA",5,0.227272727272727
+"34","Court 5-2","Non-payment of rent",15,0.681818181818182
+"35","Court 5-2","Violated lease",1,0.0454545454545455
