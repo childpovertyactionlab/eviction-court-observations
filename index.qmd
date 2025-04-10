@@ -865,7 +865,7 @@ plaAppearDeac <- deac %>%
   mutate(AppearPer = Yes/(Yes+No),
          type = "Landlord (Plaintiff) Appeared for Hearing")
 
-caseAppearDeac <- rbind(defAppear24, plaAppear24)
+caseAppearDeac <- rbind(defAppearDeac, plaAppearDeac)
 
 defRepresentDeac <- deac %>%
   filter(!is.na(jpCourt),
@@ -978,10 +978,11 @@ outcomeAppDeac <- deac %>%
          observationDate >= as.Date("2024-09-26") & observationDate < as.Date("2025-01-18")
          ) %>%
   filter(defAppear != "Unknown") %>%
-  mutate(outcomeParty = ifelse(str_detect(jpRuled, "Plaintiff"), "Ruled in Favor of Landlord",
-                                          ifelse(str_detect(jpRuled, "Defendant"), "Ruled in Favor of Tenant", 
-                                                 ifelse(str_detect(jpRuled, "abated"), "Abated",
-                                                        ifelse(str_detect(jpRuled, "dismissed"), "Dismissed", jpRuled))))) %>%
+  mutate(outcomeParty = ifelse(is.na(jpRuled), "Unknown",
+                               ifelse(str_detect(jpRuled, "Plaintiff"), "Ruled in Favor of Landlord",
+                                      ifelse(str_detect(jpRuled, "Defendant"), "Ruled in Favor of Tenant", 
+                                             ifelse(str_detect(jpRuled, "abated"), "Abated",
+                                                    ifelse(str_detect(jpRuled, "dismissed"), "Dismissed", jpRuled)))))) %>%
   group_by(defAppear, outcomeParty) %>%
   summarize(count = n()) %>%
   mutate(perOutcome = count/sum(count)) %>%
@@ -2148,7 +2149,7 @@ average length of time per hearing is likely an overestimate.
 ## DEAC
 ```{r}
 #| fig-height: 4
-court_order <- c("Court 1-1", "Court 1-2", "Court 3-1", "Court 4-2", "Court 5-1", "Total")
+court_order <- c("Court 1-1", "Court 1-2", "Court 2-1", "Court 2-2","Court 3-1", "Court 3-2" ,"Court 4-2", "Court 5-1", "Court 5-2" ,"Total")
 plotOutcomeDeac <- caseOutcomeDeac
 outcomeParty_colors <- c(
   "Abated" = "#0047bd",  
@@ -2259,7 +2260,7 @@ for (court in court_order) {
       hc_title(text = paste(court),
              style = list(fontSize = "15px", fontWeight = 'bold'))%>%
     hc_add_theme(hc_cpal)%>%
-    hc_size(height=200, width = 200)
+    hc_size(height=60, width = 200)
 
     chart_container <- htmltools::tagAppendChild(chart_container, 
                                                  htmltools::div(style = "width: 200px; height: 180px; margin: 5px;", hc)) 
@@ -2354,169 +2355,6 @@ chart_container
 
 :::
 
-```{r}
-#| fig-height: 5
-
-# caseOutcome <- caseOutcome%>%
-#   mutate(monthYear = format(ymd(observationDate), "%B %Y"))%>%
-#   group_by(monthYear, jpCourt, outcomeParty)%>%
-#   summarise(n = sum(n))%>%
-#   mutate(monthYear = factor(monthYear, levels = desired_order)) %>%
-#   arrange(monthYear)%>%
-#   mutate(color = outcomeParty_colors[outcomeParty]) 
-# caseOutcomeTotal <- caseOutcome %>%
-#   group_by(monthYear, outcomeParty)%>%
-#   summarise(n=sum(n))%>%
-#   mutate(monthYear = factor(monthYear, levels = desired_order),
-#          jpCourt = 'Total') %>%
-#   arrange(monthYear)%>%  
-#   group_by(monthYear) %>%
-#   mutate(total_n = sum(n),           
-#          percent = n / total_n * 100, 
-#          jpCourt = 'Total',
-#          color = outcomeParty_colors[outcomeParty]) %>%
-#   ungroup()%>%
-#   mutate(color = outcomeParty_colors[outcomeParty]) 
-# 
-# caseOutcome<- bind_rows(caseOutcome, caseOutcomeTotal)
-# 
-# caseOutcomeTotal <- caseOutcomeTotal %>%
-#   mutate(monthYear = as.Date(paste0(monthYear, "-01"), format = "%B %Y-%d"))
-# caseOutcomeTotal <- caseOutcomeTotal %>%
-#   complete(monthYear = seq.Date(min(monthYear), max(monthYear), by = "month"),
-#            nesting(outcomeParty, jpCourt),
-#            fill = list(n = 0, total_n = 0, percent = 0, color = "#FFFFFF"))
-# 
-# caseOutcomeTotal <- caseOutcomeTotal %>%
-#   mutate(monthYear = format(monthYear, "%B %Y"))
-# 
-# highchart() %>%
-#   hc_add_series(
-#     name = "Abated",
-#     data = caseOutcomeTotal %>% filter(outcomeParty == "Abated"),
-#     type = 'column',
-#     hcaes(x = monthYear, y = percent),
-#     color = outcomeParty_colors["Abated"]
-#   ) %>%
-#   hc_add_series(
-#     name = "Dismissed",
-#     data = caseOutcomeTotal %>% filter(outcomeParty == "Dismissed"),
-#     type = 'column',
-#     hcaes(x = monthYear, y = percent),
-#     color = outcomeParty_colors["Dismissed"]
-#   ) %>%
-#   hc_add_series(
-#     name = "Ruled in Favor of Landlord",
-#     data = caseOutcomeTotal %>% filter(outcomeParty == "Ruled in Favor of Landlord"),
-#     type = 'column',
-#     hcaes(x = monthYear, y = percent),
-#     color = outcomeParty_colors["Ruled in Favor of Landlord"]
-#   ) %>%
-#   hc_add_series(
-#     name = "Other",
-#     data = caseOutcomeTotal %>% filter(outcomeParty == "Other"),
-#     type = 'column',
-#     hcaes(x = monthYear, y = percent),
-#     color = outcomeParty_colors["Other"]
-#   ) %>%
-#   hc_add_series(
-#     name = "Ruled in Favor of Tenant",
-#     data = caseOutcomeTotal %>% filter(outcomeParty == "Ruled in Favor of Tenant"),
-#     type = 'column',
-#     hcaes(x = monthYear, y = percent),
-#     color = outcomeParty_colors["Ruled in Favor of Tenant"]
-#   ) %>%
-#   hc_add_series(
-#     name = "Unknown",
-#     data = caseOutcomeTotal %>% filter(outcomeParty == "Unknown"),
-#     type = 'column',
-#     hcaes(x = monthYear, y = percent),
-#     color = outcomeParty_colors["Unknown"]
-#   )%>%
-#   hc_plotOptions(series = list(stacking = "normal")) %>%
-#   hc_xAxis(type = 'category')%>%
-#   hc_yAxis(max = 100,
-#            labels = list(format = "{value}%")) %>%
-#   hc_tooltip(pointFormat = "{point.outcomeParty}: {point.y:.2f}% ({point.n})") %>% 
-#   hc_add_theme(hc_cpal)%>%
-#   hc_title(text = 'Total Case Outcomes Over Time')
-
-
-
-```
-
-```{r}
-# total_data <- caseOutcome %>% filter(jpCourt == "Total")
-# 
-# # Create the highchart object
-# hc <- highchart() %>%
-#   hc_chart(type = "line") %>% 
-#   hc_title(text = "Case Outcomes by Month and Court") %>% 
-#   hc_xAxis(categories = desired_order) %>% 
-#   hc_plotOptions(
-#     series = list(
-#       events = list(
-#         legendItemClick = JS("function(event) {
-#                             event.preventDefault(); 
-#                             var seriesIndex = this.index;
-#                             var chart = this.chart;
-#                             var court = this.userOptions.id.split('_')[0]; 
-#                             chart.series.forEach(function(s) {
-#                               if (s.userOptions.id.split('_')[0] === court) {
-#                                 s.setVisible(!s.visible, false); 
-#                               }
-#                             });
-#                             chart.redraw(); 
-#                           }")
-#       )
-#     )
-#   )
-# 
-# for (outcome in unique(total_data$outcomeParty)) {
-#   outcome_data <- total_data %>% filter(outcomeParty == outcome)
-#   hc <- hc %>% 
-#     hc_add_series(
-#       name = outcome, 
-#       data = outcome_data$n,
-#       id = paste0("Total_", outcome),
-#       linkedTo = "Total"
-#     ) 
-# }
-# 
-# hc <- hc %>%
-#   hc_add_series(
-#     name = "Total",
-#     data = rep(0, length(unique(total_data$monthYear))), # Dummy data, since it will be invisible
-#     id = "Total",
-#     visible = FALSE
-#   )
-# 
-# other_courts <- unique(caseOutcome$jpCourt)[unique(caseOutcome$jpCourt) != "Total"]
-# for (court in other_courts) {
-#   court_data <- caseOutcome %>% filter(jpCourt == court)
-#   for (outcome in unique(court_data$outcomeParty)) {
-#     outcome_data <- court_data %>% filter(outcomeParty == outcome)
-#     hc <- hc %>% 
-#       hc_add_series(
-#         name = outcome, 
-#         data = outcome_data$n,
-#         id = paste0(court, "_", outcome),
-#         linkedTo = court, 
-#         visible = FALSE 
-#       )
-#   }
-# 
-#   hc <- hc %>%
-#     hc_add_series(
-#       name = court,
-#       data = rep(0, length(unique(court_data$monthYear))),
-#       id = court,
-#       visible = FALSE
-#     )
-# }
-# 
-# hc
-```
 <br>
 
 ::: shadecontent
@@ -2543,7 +2381,7 @@ collections, negatively impacting a renter’s credit score.
 #| fig-height: 4
 
 plotOutApDeac <- outcomeAppDeac %>%
-  filter(!is.na(outcomeParty)) %>%
+  # filter(!is.na(outcomeParty)) %>%
   mutate(outcomeParty = factor(outcomeParty, levels = c("Ruled in Favor of Landlord", "Ruled in Favor of Tenant", "Abated", "Dismissed", "Other", "Unknown")),
          defAppear = ifelse(defAppear == "Yes", "Tenant appeared", "Tenant did not appear"))# %>%
 highchart() %>%
@@ -2558,7 +2396,7 @@ highchart() %>%
   hc_chart(type = "bar") %>%
   hc_plotOptions(bar = list(stacking = "normal"))%>%
   hc_colors(palette_cpal_main)%>%
-    hc_add_theme(hc_cpal)
+  hc_add_theme(hc_cpal)
 
 
 ```
@@ -2621,9 +2459,10 @@ highchart() %>%
 #| fig-height: 4
 
 plotRepDeac <- outcomeRepDeac %>%
-    mutate(outcomeParty = factor(outcomeParty, levels = c("Ruled in Favor of Landlord", "Ruled in Favor of Tenant", "Abated", "Dismissed", "Other", "Unknown"))) %>%
-  mutate(defRep = ifelse(str_detect(defRep, "Yes"), "With Legal Representation", "Without Legal Representation"))%>%
-  filter(!is.na(outcomeParty))
+  mutate(defRep = ifelse(str_detect(defRep, "Yes"), "With Legal Representation", "Without Legal Representation"),
+         outcomeParty = case_when(is.na(outcomeParty) ~ "Unknown",
+                                  TRUE ~ outcomeParty),
+         outcomeParty = factor(outcomeParty, levels = c("Ruled in Favor of Landlord", "Ruled in Favor of Tenant", "Abated", "Dismissed", "Other", "Unknown")))
 
 highchart() %>%
   hc_xAxis(categories = unique(plotRepDeac$defRep)) %>%
