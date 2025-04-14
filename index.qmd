@@ -1726,7 +1726,7 @@ financial assistance to renters who have fallen behind on rent.
 
 ::: {.panel-tabset}
 
-## DEAC Data
+## DEAC Cases
 ```{r}
 #| fig-height: 5
 plotAppearDeac <- caseAppearDeac%>%
@@ -1834,7 +1834,7 @@ proceed, or have already determined to move out.
 
 ::: {.panel-tabset}
 
-## DEAC Data
+## DEAC Cases
 ```{r}
 plotDefDeac <- defRepresentDeac%>%
   add_row(., tibble(jpCourt = "Court 3-1", legalRep = "Attorney present for tenant (Defendant)", count = 0, perRep = 0))%>%
@@ -2079,7 +2079,7 @@ opportunity to dismiss the eviction suit.
 
 ::: {.panel-tabset}
 
-## DEAC
+## DEAC Cases
 ```{r}
 
 hearingtimeDeac %>%
@@ -2146,7 +2146,7 @@ average length of time per hearing is likely an overestimate.
 
 ::: {.panel-tabset}
 
-## DEAC
+## DEAC Cases
 ```{r}
 #| fig-height: 4
 court_order <- c("Court 1-1", "Court 1-2", "Court 2-1", "Court 2-2","Court 3-1", "Court 3-2" ,"Court 4-2", "Court 5-1", "Court 5-2" ,"Total")
@@ -2376,7 +2376,7 @@ collections, negatively impacting a renter’s credit score.
 
 ::: {.panel-tabset}
 
-## DEAC
+## DEAC Cases
 ```{r}
 #| fig-height: 4
 
@@ -2454,7 +2454,7 @@ highchart() %>%
 
 ::: {.panel-tabset}
 
-## DEAC
+## DEAC Cases
 ```{r}
 #| fig-height: 4
 
