@@ -870,7 +870,7 @@ caseAppearDeac <- rbind(defAppearDeac, plaAppearDeac)
 defRepresentDeac <- deac %>%
   filter(!is.na(jpCourt),
          defAppear == "Yes",
-         observationDate >= as.Date("2024-09-26") & observationDate < as.Date("2025-01-18")
+         observationDate >= as.Date("2024-09-26") & observationDate <= as.Date("2025-01-18")
          ) %>%
   mutate(legalRep = ifelse(defRep == "Yes, an attorney was present for the defendant.", "Attorney present for tenant (Defendant)", "No attorney present for tenant")) %>%
   group_by(jpCourt, 
@@ -915,7 +915,7 @@ defRepresentDeac <- deac %>%
 
 ntvDeac <- deac %>%
   filter(!is.na(noticeVacate),
-          observationDate >= as.Date("2024-09-26") & observationDate < as.Date("2025-01-18")
+          observationDate >= as.Date("2024-09-26") & observationDate <= as.Date("2025-01-18")
          ) %>%
   group_by(jpCourt, noticeVacate) %>%
   summarize(count = n()) %>%
@@ -933,7 +933,7 @@ ntvDeac <- deac %>%
   ungroup()
 
 hearingtimeDeac <- deac %>%
-  filter(observationDate >= as.Date("2024-09-26") & observationDate < as.Date("2025-01-18"))%>%
+  filter(observationDate >= as.Date("2024-09-26") & observationDate <= as.Date("2025-01-18"))%>%
   mutate(dockLength = docketEnd-docketStart) %>%
   filter(!is.na(dockLength))%>%
   group_by(jpCourt, observationDate) %>%
@@ -951,7 +951,7 @@ hearingtimeDeac <- deac %>%
 caseOutcomeDeac <- deac %>%
   filter(!is.na(jpCourt),
          # !is.na(jpRuled),
-         observationDate >= as.Date("2024-09-26") & observationDate < as.Date("2025-01-18")
+         observationDate >= as.Date("2024-09-26") & observationDate <= as.Date("2025-01-18")
          ) %>%
   mutate(outcomeParty = ifelse(is.na(jpRuled), "Unknown",
                                ifelse(str_detect(jpRuled, "Plaintiff"), "Ruled in Favor of Landlord",
@@ -975,7 +975,7 @@ caseOutcomeDeac <- deac %>%
 
 outcomeAppDeac <- deac %>%
   filter(!is.na(jpCourt),
-         observationDate >= as.Date("2024-09-26") & observationDate < as.Date("2025-01-18")
+         observationDate >= as.Date("2024-09-26") & observationDate <= as.Date("2025-01-18")
          ) %>%
   filter(defAppear != "Unknown") %>%
   mutate(outcomeParty = ifelse(is.na(jpRuled), "Unknown",
@@ -990,7 +990,7 @@ outcomeAppDeac <- deac %>%
 
 outcomeRepDeac <- deac %>%
   filter(!is.na(jpCourt),
-         observationDate >= as.Date("2024-09-26") & observationDate < as.Date("2025-01-18")
+         observationDate >= as.Date("2024-09-26") & observationDate <= as.Date("2025-01-18")
          ) %>%
   filter(defRep == "Yes, an attorney was present for the defendant." | defRep == "No, the defendant did not have additional representation.") %>%
   mutate(outcomeParty = ifelse(str_detect(jpRuled, "Plaintiff"), "Ruled in Favor of Landlord",
@@ -1011,7 +1011,7 @@ observers <- deac %>% group_by(observer) %>%
   summarise(n=n())
 
 totevicDeac <- evictions%>%
-  filter(filed_date >= as.Date('2024-04-26') & filed_date < as.Date('2025-01-18'))
+  filter(filed_date >= as.Date('2024-04-26') & filed_date <= as.Date('2025-01-18'))
 startDate <- min(deac$observationDate, na.rm = TRUE)
 endDate <- max(deac$observationDate, na.rm = TRUE)
 
