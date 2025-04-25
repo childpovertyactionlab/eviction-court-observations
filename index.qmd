@@ -720,6 +720,9 @@ deac <- read_sheet("https://docs.google.com/spreadsheets/d/11X91mVG7XSTDk3fjb8gC
          # totalOwned = as.numeric(totalOwned)
          )
   
+# evicNonDuplicates <- deac %>%
+#   filter(!caseNumber %in% evictions$case_number)
+# write.csv(evicNonDuplicates, "data/Evic Non Duplicates.csv")
 reference_date <- "1899-12-30"
 deac$docketStart <- paste(reference_date, deac$docketStart)  # Combine with reference date
 deac$docketEnd <- paste(reference_date, deac$docketEnd)  # Combine with reference date
