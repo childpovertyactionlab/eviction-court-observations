@@ -1,0 +1,16 @@
+"","jpCourt","noticeConfirm","count","perntv"
+"1","Court 1-1","",552,1
+"2","Court 1-2","",100,0.900900900900901
+"3","Court 1-2","Yes, the NTV was confirmed orally.",10,0.0900900900900901
+"4","Court 1-2","Yes, the NTV was confirmed with proof/evidence.",1,0.00900900900900901
+"5","Court 2-1","",38,1
+"6","Court 2-2","",50,1
+"7","Court 3-1","No, the NTV was not confirmed. E.g., the NTV was not administered; the NTV was not properly administered; the plaintiff was unable to prove the NTV; etc.",2,0.0229885057471264
+"8","Court 3-1","Yes, the NTV was confirmed orally.",80,0.919540229885057
+"9","Court 3-1","Yes, the NTV was confirmed with proof/evidence.",5,0.0574712643678161
+"10","Court 3-2","No, the NTV was not confirmed. E.g., the NTV was not administered; the NTV was not properly administered; the plaintiff was unable to prove the NTV; etc.",1,0.5
+"11","Court 3-2","Yes, the NTV was confirmed orally.",1,0.5
+"12","Court 5-1","",115,0.746753246753247
+"13","Court 5-1","No, the NTV was not confirmed. E.g., the NTV was not administered; the NTV was not properly administered; the plaintiff was unable to prove the NTV; etc.",1,0.00649350649350649
+"14","Court 5-1","Yes, the NTV was confirmed orally.",2,0.012987012987013
+"15","Court 5-1","Yes, the NTV was confirmed with proof/evidence.",36,0.233766233766234
