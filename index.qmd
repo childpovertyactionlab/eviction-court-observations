@@ -118,10 +118,13 @@ chgevic3 <-abs(round(((nrow(totevic4)-nrow(totevic1))/nrow(totevic1))*100, digit
 chgevic1 <- round(((nrow(totevic1)-nrow(totevic2))/nrow(totevic2))*100, digits = 1)
 #percent change in evictions last year (2022)
 chgevic2 <- round(((nrow(totevic1)-nrow(totevic3))/nrow(totevic3))*100, digits = 1)
+current_year <- year(Sys.Date())
+current_month <- month(Sys.Date())
 
 #average evictions by month in the last 5 years
 evicMonths <- evictions %>%
-  filter(filed_date >= as.Date("2019-01-01")) %>%
+  filter(filed_date >= as.Date("2019-01-01"),
+         !(year(filed_date) == current_year & month(filed_date) == current_month)) %>%
   group_by(lubridate::year(filed_date), lubridate::month(filed_date)) %>%
   summarize(totevic = n()) %>%
   rename(yearFiled = 1,
@@ -928,6 +931,17 @@ ntvDeac <- deac %>%
   group_by(jpCourt) %>%
   summarize(count = n()) %>%
   mutate(perntv = count/sum(count))
+ntvDeacObserver <- deac %>%
+  filter(!is.na(noticeVacate),
+         noticeVacate == 'Yes',
+         defAppear == 'Yes',
+         observationDate >= as.Date("2024-09-26") & observationDate <= as.Date("2025-01-18"),
+         str_detect(noticeConfirm, "^Yes")
+         ) %>%
+  group_by(jpCourt, noticeConfirm, observer) %>%
+  summarize(count = n()) %>%
+  mutate(perntv = count/sum(count))
+# write.csv(ntvDeacObserver, 'ntvDeacObserver.csv')
 # write.csv(ntvDeac, 'data/Notice to Vacate Breakdown.csv')
 
 # ntvDeacFull <- deac %>%
@@ -956,6 +970,22 @@ hearingtimeDeac <- deac %>%
   janitor::adorn_totals() %>%
   mutate(AvgCaseLength = SumDockLength/CasesObs) %>%
   select(-SumDockLength)
+# hearingtimeDeacObserver <- deac %>%
+#   filter(observationDate >= as.Date("2024-09-26") & observationDate <= as.Date("2025-01-18"))%>%
+#   mutate(dockLength = docketEnd-docketStart) %>%
+#   filter(!is.na(dockLength))%>%
+#   group_by(jpCourt, observationDate, observer) %>%
+#   summarize(CasesObs = n(),
+#             AvgDockLength = mean(dockLength, na.rm=TRUE)) %>%
+#   ungroup() %>%
+#   group_by(jpCourt, observer)%>%
+#   summarize(CasesObs = sum(CasesObs),
+#             SumDockLength = as.numeric(sum(AvgDockLength))) %>%
+#   ungroup(.) %>%
+#   janitor::adorn_totals() %>%
+#   mutate(AvgCaseLength = SumDockLength/CasesObs) %>%
+#   select(-SumDockLength)
+# write.csv(hearingtimeDeacObserver, 'data/hearingtimeDeacObserver.csv')
 
 caseOutcomeDeac <- deac %>%
   filter(!is.na(jpCourt),
