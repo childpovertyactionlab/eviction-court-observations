@@ -1052,6 +1052,15 @@ outcomeRepDeac <- deac %>%
   mutate(perOutcome = count/sum(count)) %>%
   ungroup(.)
 
+outcomeRepCheck <- deac %>%
+  filter(!is.na(jpCourt),
+         observationDate >= as.Date("2024-09-26") & observationDate <= as.Date("2025-01-18"),
+         defRep == "Yes, an attorney was present for the defendant." | defRep == "No, the defendant did not have additional representation."
+         )  %>%
+  group_by(defRep, jpRuled
+           ) %>%
+  summarise(n = n())
+
 defRepAppear <- deac %>%
   group_by(defRep, defAppear) %>%
   summarise(n = n(),
