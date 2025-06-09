@@ -1061,7 +1061,7 @@ observers <- deac %>% group_by(observer) %>%
   summarise(n=n())
 
 totevicDeac <- evictions%>%
-  filter(filed_date >= as.Date('2024-04-26') & filed_date <= as.Date('2025-01-18'))
+  filter(filed_date >= as.Date('2024-09-26') & filed_date <= as.Date('2025-01-18'))
 startDate <- min(deac$observationDate, na.rm = TRUE)
 endDate <- max(deac$observationDate, na.rm = TRUE)
 
@@ -1069,6 +1069,20 @@ endDate <- max(deac$observationDate, na.rm = TRUE)
 totdaysDeac <- difftime(endDate, startDate, "days") %>%
   as.numeric()
 avgevicDeac <- round(nrow(totevicDeac)/totdaysDeac, digits = 1)
+chgevicDeac <-abs(round(((nrow(totevicDeac)-nrow(totevic4))/nrow(totevic4))*100, digits = 1))
+
+jpCasesCtyDeac <- jpCasesDeac %>%
+  summarize(obsCases = sum(obsCases),
+            totEvic = sum(totEvic)) %>%
+  mutate(perAllCases = round(obsCases/totEvic, digits = 3))
+
+casesByCourtDeac <- deac %>%
+  group_by(jpCourt) %>%
+  summarise(obsCases = n()) %>%
+  mutate(perObsCases = obsCases/sum(obsCases)) 
+
+
+
 
 
 
@@ -1090,7 +1104,6 @@ for mothers with children.
 Dallas County, an average of `r avgevic3` per day.** This represents a
 `r paste0(chgevic3, "%")` decrease over this same time period in 2023 and
 a `r paste0(chgevic1, "%")` increase over the same time period in 2022.
-Although eviction filings rose rapidly after the end of the CDC Eviction Moratorium in August 2021, filings moderated in 2023 and the first half of 2024: monthly filings in Dallas County over the past 18 months have largely been below pre-pandemic (2019) filing counts.
 
 ```{r}
 #| fig-height: 4
@@ -1181,11 +1194,11 @@ hc <- highchart() %>%
   hc_chart(type = "organization",
            inverted = TRUE) %>% 
   hc_add_series(data = list(
-    list(from = "Tenant receives written Notice to Vacate.", to = "Tenant given 1 or more days to move out of rental depending on lease.", name = "Tenant receives written Notice to Vacate."),
-    list(from = "Tenant given 1 or more days to move out of rental depending on lease.", to = "Tenant moves out of rental or\nresolves issue with the landlord.", name = "Tenant moves out or resolves issue."),
-    list(from = "Tenant given 1 or more days to move out of rental depending on lease.", to = "Tenant does not leave rental within\ntime frame dictated by Notice to Vacate.", name = "Tenant does not leave rental in time."),
-    list(from = "Tenant does not leave rental within\ntime frame dictated by Notice to Vacate.", to = "Landlord files eviction suit with\ntheir local JP Precinct.", name = "Landlord files eviction suit."),
-    list(from = "Landlord files eviction suit with\ntheir local JP Precinct.", to = "Hearing is scheduled at least 10 days\nafter eviction filing is made.", name = "Hearing is scheduled."),
+    list(from = "Tenant receives written Notice to Vacate.", to = "Tenant given 1 or more days to move out of rental, depending on lease.", name = "Tenant receives written Notice to Vacate."),
+    list(from = "Tenant given 1 or more days to move out of rental, depending on lease.", to = "Tenant moves out of rental or\nresolves issue with the landlord.", name = "Tenant moves out or resolves issue."),
+    list(from = "Tenant given 1 or more days to move out of rental, depending on lease.", to = "Tenant does not leave rental within\ntime frame dictated by Notice to Vacate.", name = "Tenant does not leave rental in time."),
+    list(from = "Tenant does not leave rental within\ntime frame dictated by Notice to Vacate.", to = "Landlord files eviction suit with their local JP court.", name = "Landlord files eviction suit."),
+    list(from = "Landlord files eviction suit with their local JP court.", to = "Hearing is scheduled at least 10 days\nafter eviction filing is made.", name = "Hearing is scheduled."),
     list(from = "Hearing is scheduled at least 10 days\nafter eviction filing is made.", to = "Case is heard at JP court.", name = "Case is heard."),
     list(from = "Case is heard at JP court.", to = "Eviction Judgement", name = "Eviction Judgement"),
     list(from = "Eviction Judgement", to = "Case is dismissed.", name = "Case is dismissed."),
@@ -1244,8 +1257,7 @@ been ongoing since, with the purpose of improving local
 understanding of how eviction unfolds, uncovering
 barriers/challenges for tenants and landlords, and identifying
 ways to better support tenants and landlords upstream of an eviction
-hearing. Observation first began in Dallas County Justice of the Peace Court 1-1 and has since expanded to include 1-2, 3-1, 4-1, 4-2, and 5-1.
-<!-- in 2023. -->
+hearing. Observation first began in Dallas County Justice of the Peace Court 1-1 and has since expanded to nearly every JP court.
 
 # Case Observation Protocol
 
@@ -1255,7 +1267,7 @@ heard, and then enter the data digitally for CPAL analysis. Since late
 2021, volunteer observers have mostly been SMU Dedman School of Law and UNT-Dallas College of Law
 students, primarily in their second or third year of law school,
 volunteering as part of a class requirement or to fulfill public service
-hours. CPAL staff on-board volunteer observers through a two-part
+hours. The fall 2024 dataset represents observations by volunteer SMU law students but also includes observations by paid research assistants working in collaboration with the University of Michigan, the University of California San Diego, and the Dallas Eviction Advocacy Center. CPAL staff on-board volunteer observers through a two-part
 training: the first is an introductory online session to explain the
 eviction process, and the second is an onsite session at a Justice of
 the Peace court focused on data collection through observation.
@@ -1270,23 +1282,17 @@ and cleans the data, as needed.
 
 # Case Observation Findings
 
-From `r format(as.Date("2023-06-20"), "%B %d, %Y")` through
-`r format(as.Date("2024-04-25"), "%B %d, %Y")`, `r smuStudents` SMU Law student
-volunteers observed **`r formattable::comma(nrow(courtobs24), digits = 0)`
-cases**: `r formattable::comma(jp11_24, digits = 0)` in Justice of the
-Peace Court 1-1, `r formattable::comma(jp12_24, digits = 0)` in Justice of
-the Peace Court 1-2, `r formattable::comma(jp31_24, digits = 0)` in Justice
-of the Peace Court 3-1, `r formattable::comma(jp41_24, digits = 0)` in
-Justice of the Peace Court 4-1, `r formattable::comma(jp42_24, digits = 0)` in
-Justice of the Peace Court 4-2, and
-`r formattable::comma(jp51_24, digits = 0)` in Justice of the Peace Court
-5-1. The `r formattable::comma(nrow(courtobs24), digits = 0)` observed cases
-represent **`r paste0(jpCasesCty24$perAllCases*100, "% coverage")`** of
-all initially scheduled hearings across the five courts. 
+From `r format(min(deac$observationDate, na.rm = TRUE), "%B %d, %Y")` through
+`r format(max(deac$observationDate, na.rm = TRUE), "%B %d, %Y")`, 7 SMU law students and 3 research assistants
+observed **`r formattable::comma(nrow(deac), digits = 0)`
+cases**,
+representing **`r paste0(jpCasesCtyDeac$perAllCases*100, "% coverage")`** of all initially scheduled hearings across nine courts. 
+Coverage was greatest in `r casesByCourtDeac %>% slice_max(obsCases, n = 1) %>% pull(jpCourt)`: observers recorded data for 2,349
+ cases, representing `r scales::percent(max(casesByCourtDeac$perObsCases), accuracy = .1)` coverage. Although observers were in nine courts during the observation period, data from two courts (4-2 and 5-2) are not reported here due to a limited sample of observed cases.
 
 ::: {.panel-tabset}
 
-## DEAC Cases
+## Fall 2024
 ```{r}
 #| fig-height: 4
 
@@ -1460,7 +1466,7 @@ jpCasesObs23 %>%
 ::: column-margin
 \*The scheduled hearings indicator was calculated based on the hearing
 date set at the time of the eviction filing. If a hearing date was
-subsequently rescheduled for a date later than April 25, then the case
+subsequently rescheduled for a date later than January 18, 2025, then the case
 is still included here in the ‘scheduled hearings’ count. Some scheduled
 hearings may have been dismissed in advance of the docket, so ‘coverage’
 here is likely an underrepresentation of cases observed relative to the
@@ -1469,14 +1475,14 @@ number of cases heard during a docket.
 
 <br>
 
-## Across cases observed from Summer 2023 through Spring 2024, we found:
+## Across cases observed in Fall 2024, we found:
 
 
 **Most eviction cases were due to nonpayment of rent.**
 
 ::: {.panel-tabset}
 
-## DEAC Cases
+## Fall 2024
 ```{r}
 #| fig-height: 5
 plotReasonDeac <- evicReasonDeac 
@@ -1773,11 +1779,11 @@ this time, but eviction filing data illustrates the ongoing need for
 financial assistance to renters who have fallen behind on rent.
 :::
 <br>
-**Landlords or their representatives almost always appeared for the hearing, but tenants appeared less than half the time.**
+**Landlords or their representives almost always appeared for their hearings, while tenants appeared about half of the time. **
 
 ::: {.panel-tabset}
 
-## DEAC Cases
+## Fall 2024
 ```{r}
 #| fig-height: 5
 plotAppearDeac <- caseAppearDeac%>%
@@ -1881,11 +1887,11 @@ go to work, lack transportation, are unclear about how eviction cases
 proceed, or have already determined to move out.
 :::
 <br>
-**Tenants had legal representation in 25% of observed hearings.**
+**Tenants had legal representation in 50% of observed hearings. **
 
 ::: {.panel-tabset}
 
-## DEAC Cases
+## Fall 2024
 ```{r}
 plotDefDeac <- defRepresentDeac%>%
   add_row(., tibble(jpCourt = "Court 3-1", legalRep = "Attorney present for tenant (Defendant)", count = 0, perRep = 0))%>%
@@ -1998,8 +2004,7 @@ highchart()%>%
 {{< fa house-chimney size=lg title="Housing" >}} **Why this matters**:
 Unlike criminal cases, defendants in civil cases generally do not have a
 right to counsel and are not assigned a public defender to represent
-them in court. As a result, very few tenants in eviction cases have
-legal representation and must defend themselves. Renters with legal
+them in court. Renters with legal
 representation in eviction hearings are much more likely to win their
 case and remain housed. Attorneys may also help renters negotiate terms
 with their landlords, keep eviction judgments off their records, and
@@ -2010,7 +2015,7 @@ navigate other housing supports, like rent relief.
 
 ::: {.panel-tabset}
 
-## DEAC Cases
+## Fall 2024
 ```{r}
 #| fig-height: 5
 
@@ -2123,7 +2128,7 @@ opportunity to dismiss the eviction suit.
 
 ::: {.panel-tabset}
 
-## DEAC Cases
+## Fall 2024
 ```{r}
 
 hearingtimeDeac %>%
@@ -2190,7 +2195,7 @@ average length of time per hearing is likely an overestimate.
 
 ::: {.panel-tabset}
 
-## DEAC Cases
+## Fall 2024
 ```{r}
 #| fig-height: 4
 court_order <- c("Court 1-1", "Court 1-2", "Court 2-1", "Court 2-2","Court 3-1", "Court 3-2", "Court 5-1","Total")
@@ -2420,7 +2425,7 @@ collections, negatively impacting a renter’s credit score.
 
 ::: {.panel-tabset}
 
-## DEAC Cases
+## Fall 2024
 ```{r}
 #| fig-height: 4
 
@@ -2498,7 +2503,7 @@ highchart() %>%
 
 ::: {.panel-tabset}
 
-## DEAC Cases
+## Fall 2024
 ```{r}
 #| fig-height: 4
 
