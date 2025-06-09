@@ -1070,6 +1070,7 @@ totdaysDeac <- difftime(endDate, startDate, "days") %>%
   as.numeric()
 avgevicDeac <- round(nrow(totevicDeac)/totdaysDeac, digits = 1)
 chgevicDeac <-abs(round(((nrow(totevicDeac)-nrow(totevic4))/nrow(totevic4))*100, digits = 1))
+chgevicDeac2023 <-abs(round(((nrow(totevicDeac)-nrow(totevic1))/nrow(totevic1))*100, digits = 1))
 
 jpCasesCtyDeac <- jpCasesDeac %>%
   summarize(obsCases = sum(obsCases),
@@ -2122,76 +2123,74 @@ confirmed during an eviction hearing, then there may be a missed
 opportunity to dismiss the eviction suit.
 :::
 
-<br>
+<!-- ## Across all cases in the Summer '23 - Spring '24 Observation Cycle, the average length of time for each hearing was less than 4 minutes. -->
 
-## Across all cases in the Summer '23 - Spring '24 Observation Cycle, the average length of time for each hearing was less than 4 minutes.
+<!-- ::: {.panel-tabset} -->
 
-::: {.panel-tabset}
+<!-- ## Fall 2024 -->
+<!-- ```{r} -->
 
-## Fall 2024
-```{r}
+<!-- hearingtimeDeac %>% -->
+<!--   transmute('JP Court' = jpCourt, -->
+<!--             'Cases Observed' = scales::number(CasesObs, big.mark = ","), -->
+<!--             'Average Case Length' = paste(round(AvgCaseLength/60, digits = 1), "Minutes")) %>% -->
+<!--   datatable(options = list(paging = FALSE, -->
+<!--                            searching = FALSE, -->
+<!--                            info = FALSE -->
+<!--                            ), -->
+<!--             rownames = FALSE) %>% -->
+<!--   formatStyle(columns = colnames(.), fontWeight = 'bold', `text-align` = 'left') %>% -->
+<!--   formatStyle(columns = colnames(.), fontFamily = "Poppins") -->
 
-hearingtimeDeac %>%
-  transmute('JP Court' = jpCourt,
-            'Cases Observed' = scales::number(CasesObs, big.mark = ","),
-            'Average Case Length' = paste(round(AvgCaseLength/60, digits = 1), "Minutes")) %>%
-  datatable(options = list(paging = FALSE,
-                           searching = FALSE,
-                           info = FALSE
-                           ),
-            rownames = FALSE) %>%
-  formatStyle(columns = colnames(.), fontWeight = 'bold', `text-align` = 'left') %>%
-  formatStyle(columns = colnames(.), fontFamily = "Poppins")
+<!-- ``` -->
 
-```
+<!-- ## Summer '23 - Spring '24 -->
 
-## Summer '23 - Spring '24
+<!-- ```{r, Average Hearing Time} -->
+<!-- hearingtime24 %>% -->
+<!--   transmute('JP Court' = jpCourt, -->
+<!--             'Cases Observed' = scales::number(CasesObs, big.mark = ","), -->
+<!--             'Average Case Length' = paste(round(AvgCaseLength/60, digits = 1), "Minutes")) %>% -->
+<!--   datatable(options = list(paging = FALSE, -->
+<!--                            searching = FALSE, -->
+<!--                            info = FALSE -->
+<!--                            ), -->
+<!--             rownames = FALSE) %>% -->
+<!--   formatStyle(columns = colnames(.), fontWeight = 'bold', `text-align` = 'left') %>% -->
+<!--   formatStyle(columns = colnames(.), fontFamily = "Poppins") -->
+<!-- ``` -->
 
-```{r, Average Hearing Time}
-hearingtime24 %>%
-  transmute('JP Court' = jpCourt,
-            'Cases Observed' = scales::number(CasesObs, big.mark = ","),
-            'Average Case Length' = paste(round(AvgCaseLength/60, digits = 1), "Minutes")) %>%
-  datatable(options = list(paging = FALSE,
-                           searching = FALSE,
-                           info = FALSE
-                           ),
-            rownames = FALSE) %>%
-  formatStyle(columns = colnames(.), fontWeight = 'bold', `text-align` = 'left') %>%
-  formatStyle(columns = colnames(.), fontFamily = "Poppins")
-```
+<!-- ## Fall '22 - Spring '23 -->
 
-## Fall '22 - Spring '23
+<!-- ```{r} -->
+<!-- hearingtime23 %>% -->
+<!--   transmute('JP Court' = jpCourt, -->
+<!--             'Cases Observed' = scales::number(CasesObs, big.mark = ","), -->
+<!--             'Average Case Length' = paste(round(AvgCaseLength, digits = 1), "Minutes")) %>% -->
+<!--   datatable(options = list(paging = FALSE, -->
+<!--                            searching = FALSE, -->
+<!--                            info = FALSE -->
+<!--                            ), -->
+<!--             rownames = FALSE) %>% -->
+<!--   formatStyle(columns = colnames(.), fontWeight = 'bold', `text-align` = 'left') %>% -->
+<!--   formatStyle(columns = colnames(.), fontFamily = "Poppins") -->
+<!-- ``` -->
+<!-- ::: -->
 
-```{r}
-hearingtime23 %>%
-  transmute('JP Court' = jpCourt,
-            'Cases Observed' = scales::number(CasesObs, big.mark = ","),
-            'Average Case Length' = paste(round(AvgCaseLength, digits = 1), "Minutes")) %>%
-  datatable(options = list(paging = FALSE,
-                           searching = FALSE,
-                           info = FALSE
-                           ),
-            rownames = FALSE) %>%
-  formatStyle(columns = colnames(.), fontWeight = 'bold', `text-align` = 'left') %>%
-  formatStyle(columns = colnames(.), fontFamily = "Poppins")
-```
-:::
-
-::: column-margin
-Average hearing length calculated by (1) counting the number of cases
-observed in each docket, including default judgments, (2) calculating
-the total time of the docket (end time - start time), (3) calculating
-the average length of each hearing by dividing docket time by number of
-cases observed, and then (4) calculating a weighted average across all
-observed dockets. Because not all cases in a single docket may have been
-observed, average length of time here is likely conservative – i.e.,
-average length of time per hearing is likely an overestimate.
-:::
+<!-- ::: column-margin -->
+<!-- Average hearing length calculated by (1) counting the number of cases -->
+<!-- observed in each docket, including default judgments, (2) calculating -->
+<!-- the total time of the docket (end time - start time), (3) calculating -->
+<!-- the average length of each hearing by dividing docket time by number of -->
+<!-- cases observed, and then (4) calculating a weighted average across all -->
+<!-- observed dockets. Because not all cases in a single docket may have been -->
+<!-- observed, average length of time here is likely conservative – i.e., -->
+<!-- average length of time per hearing is likely an overestimate. -->
+<!-- ::: -->
 
 <br>
 
-## Across all observed cases, the judge ruled in favor of the landlord in 62% of cases and in favor of the tenant in 6% of cases.
+## Across all observed cases, the judge ruled in favor of the landlord in 56% of cases and in favor of the tenant in 10% of cases.
 
 ::: {.panel-tabset}
 
@@ -2419,7 +2418,7 @@ collections, negatively impacting a renter’s credit score.
 
 <br>
 
-## However, appearing in court and having legal representation matters for outcomes. When tenants appeared for their hearings, cases were decided in favor of the landlord 54% of the time.
+## However, appearing in court and having legal representation matters for outcomes. When tenants did not appear for their hearings, cases were decided in favor of the landlord 79% of the time; when tenants did appear, cases were decided in favor of the landlord 53% of the time.
 
 **Case outcomes when tenant/defendant appeared versus when tenant/defendant did not appear (across all observations):**
 
@@ -2498,7 +2497,7 @@ highchart() %>%
 
 :::
 
-## When tenants had legal representation, cases were decided in favor of the landlord 13% of the time.
+## When tenants had legal representation, cases were decided in favor of the landlord 26% of the time.
 **Case outcomes when tenant/defendant had legal representation versus when tenant/defendant did not have legal representation (across all observations).**
 
 ::: {.panel-tabset}
