@@ -1296,7 +1296,7 @@ From `r format(min(deac$observationDate, na.rm = TRUE), "%B %d, %Y")` through
 `r format(max(deac$observationDate, na.rm = TRUE), "%B %d, %Y")`, 7 SMU law students and 3 research assistants
 observed **`r formattable::comma(nrow(deac), digits = 0)`
 cases**,
-representing **`r paste0(jpCasesCtyDeac$perAllCases*100, "% coverage")`** of all initially scheduled hearings across nine courts. 
+representing **`r paste0(jpCasesCtyDeac$perAllCases*100, "% coverage")`** of all initially scheduled hearings across seven courts. 
 Coverage was greatest in `r casesByCourtDeac %>% slice_max(obsCases, n = 1) %>% pull(jpCourt)`: observers recorded data for 2,349
  cases, representing `r scales::percent(max(casesByCourtDeac$perObsCases), accuracy = .1)` coverage. Although observers were in nine courts during the observation period, data from two courts (4-2 and 5-2) are not reported here due to a limited sample of observed cases.
 
@@ -1338,7 +1338,7 @@ highchart()%>%
   )) %>%
   hc_tooltip(pointFormat = "{series.name} cases: {point.y:.2f}%") %>%
   hc_add_theme(hc_cpal)%>%
-  hc_title(text = "Percent of Cases Observed in Summer '23 - Spring '24 Cycle")
+  hc_title(text = "Percent of Cases Observed in Fall 2024 Cycle")
 
 jpCasesDeac %>%
   ungroup(.) %>%
