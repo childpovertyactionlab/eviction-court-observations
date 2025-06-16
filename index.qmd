@@ -1038,15 +1038,17 @@ outcomeRepDeac <- deac %>%
   summarize(count = n()) %>%
   mutate(perOutcome = count/sum(count)) %>%
   ungroup(.)
+# write.csv(outcomeRepDeac, 'data/Outcome Representation Graph Data.csv')
 
 outcomeRepCheck <- deac %>%
   filter(!is.na(jpCourt),
          observationDate >= as.Date("2024-09-26") & observationDate <= as.Date("2025-01-18"),
-         defRep == "Yes, an attorney was present for the defendant." | defRep == "No, the defendant did not have additional representation."
+         # defRep == "Yes, an attorney was present for the defendant." | defRep == "No, the defendant did not have additional representation."
          )  %>%
-  group_by(defRep, jpRuled
+  group_by(defRep#, jpRuled
            ) %>%
   summarise(n = n())
+write.csv(outcomeRepCheck, "data/Legal Rep Breakdown.csv")
 
 defRepAppear <- deac %>%
   group_by(defRep, defAppear) %>%

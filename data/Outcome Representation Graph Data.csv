@@ -1,0 +1,11 @@
+"","defRep","outcomeParty","count","perOutcome"
+"1","No, the defendant did not have additional representation.","Abated",27,0.122727272727273
+"2","No, the defendant did not have additional representation.","Dismissed",5,0.0227272727272727
+"3","No, the defendant did not have additional representation.","Ruled in Favor of Landlord",179,0.813636363636364
+"4","No, the defendant did not have additional representation.","Ruled in Favor of Tenant",8,0.0363636363636364
+"5","No, the defendant did not have additional representation.","Unknown",1,0.00454545454545455
+"6","Yes, an attorney was present for the defendant.","Abated",291,0.42606149341142
+"7","Yes, an attorney was present for the defendant.","Dismissed",14,0.020497803806735
+"8","Yes, an attorney was present for the defendant.","Ruled in Favor of Landlord",178,0.260614934114202
+"9","Yes, an attorney was present for the defendant.","Ruled in Favor of Tenant",199,0.291361639824305
+"10","Yes, an attorney was present for the defendant.","Unknown",1,0.00146412884333821
