@@ -923,37 +923,24 @@ defRepresentDeac <- deac %>%
 
 ntvDeac <- deac %>%
   filter(!is.na(noticeVacate),
-         noticeVacate == 'Yes',
-         defAppear == 'Yes',
-         observationDate >= as.Date("2024-09-26") & observationDate <= as.Date("2025-01-18"),
-         str_detect(noticeConfirm, "^Yes")
+          observationDate >= as.Date("2024-09-26") & observationDate <= as.Date("2025-01-18"),
+         # str_detect(noticeConfirm, "^Yes")
          ) %>%
+  group_by(jpCourt, noticeVacate) %>%
+  summarize(count = n()) %>%
+  mutate(perntv = count/sum(count)) %>%
+  ungroup(.) %>%
+  group_by(noticeVacate) %>%
+  group_map(~ .x %>%
+          janitor::adorn_totals(),.keep = T) %>% 
+  bind_rows() %>%
+  mutate(test = lag(noticeVacate),
+         noticeVacate = ifelse(str_detect(noticeVacate, "Yes|No|Unknown"), noticeVacate, test)) %>%
+  select(-test) %>%
   group_by(jpCourt) %>%
-  summarize(count = n()) %>%
-  mutate(perntv = count/sum(count))
-ntvDeacObserver <- deac %>%
-  filter(!is.na(noticeVacate),
-         noticeVacate == 'Yes',
-         defAppear == 'Yes',
-         observationDate >= as.Date("2024-09-26") & observationDate <= as.Date("2025-01-18"),
-         str_detect(noticeConfirm, "^Yes")
-         ) %>%
-  group_by(jpCourt, noticeConfirm, observer) %>%
-  summarize(count = n()) %>%
-  mutate(perntv = count/sum(count))
-# write.csv(ntvDeacObserver, 'ntvDeacObserver.csv')
-# write.csv(ntvDeac, 'data/Notice to Vacate Breakdown.csv')
+  mutate(perntv = count/sum(count)) %>%
+  ungroup()
 
-# ntvDeacFull <- deac %>%
-#   filter(!is.na(noticeVacate),
-#          noticeVacate == 'Yes',
-#          defAppear == 'Yes',
-#           observationDate >= as.Date("2024-09-26") & observationDate <= as.Date("2025-01-18")
-#          ) %>%
-#   group_by(noticeConfirm) %>%
-#   summarize(count = n()) %>%
-#   mutate(perntv = count/sum(count))
-# write.csv(ntvDeacFull, 'data/Notice to Vacate Full.csv')
 
 hearingtimeDeac <- deac %>%
   filter(observationDate >= as.Date("2024-09-26") & observationDate <= as.Date("2025-01-18"))%>%
@@ -1789,7 +1776,7 @@ this time, but eviction filing data illustrates the ongoing need for
 financial assistance to renters who have fallen behind on rent.
 :::
 <br>
-**Landlords or their representives almost always appeared for their hearings, while tenants appeared about half of the time. **
+**Landlords or their representatives almost always appeared for the hearing, but tenants appeared about half of the time. However, tenant appearance has improved (+14% points) over previous observation cycles.**
 
 ::: {.panel-tabset}
 
@@ -1897,7 +1884,7 @@ go to work, lack transportation, are unclear about how eviction cases
 proceed, or have already determined to move out.
 :::
 <br>
-**Tenants had legal representation in 50% of observed hearings. **
+**Legal representation of tenants has improved (+25% points) over previous observation cycles. **
 
 ::: {.panel-tabset}
 
@@ -2029,7 +2016,8 @@ navigate other housing supports, like rent relief.
 ```{r}
 #| fig-height: 5
 
-plotntvDeac <- ntvDeac 
+plotntvDeac <- ntvDeac %>%
+  filter(noticeVacate == "Yes")
   
 
 highchart()%>%
