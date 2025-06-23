@@ -1,4 +1,16 @@
-"","legalRep","count","perRep"
-"1","Attorney present for tenant (Defendant)",578,0.505686789151356
-"2","No attorney present for tenant",223,0.195100612423447
-"3",NA,342,0.299212598425197
+"","jpCourt","legalRep","count","perRep"
+"1","Court 1-1","Attorney present for tenant (Defendant)",384,0.532593619972261
+"2","Court 1-2","Attorney present for tenant (Defendant)",57,0.377483443708609
+"3","Court 2-1","Attorney present for tenant (Defendant)",27,0.58695652173913
+"4","Court 2-2","Attorney present for tenant (Defendant)",67,0.893333333333333
+"5","Court 3-2","Attorney present for tenant (Defendant)",1,0.0263157894736842
+"6","Court 5-1","Attorney present for tenant (Defendant)",99,0.5
+"7","Total","Attorney present for tenant (Defendant)",635,0.504368546465449
+"8","Court 1-1","No attorney present for tenant",337,0.467406380027739
+"9","Court 1-2","No attorney present for tenant",94,0.622516556291391
+"10","Court 2-1","No attorney present for tenant",19,0.41304347826087
+"11","Court 2-2","No attorney present for tenant",8,0.106666666666667
+"12","Court 3-1","No attorney present for tenant",30,1
+"13","Court 3-2","No attorney present for tenant",37,0.973684210526316
+"14","Court 5-1","No attorney present for tenant",99,0.5
+"15","Total","No attorney present for tenant",624,0.495631453534551

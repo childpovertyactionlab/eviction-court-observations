@@ -1287,7 +1287,7 @@ observed **`r formattable::comma(nrow(deac), digits = 0)`
 cases**,
 representing **`r paste0(jpCasesCtyDeac$perAllCases*100, "% coverage")`** of all initially scheduled hearings across seven courts. 
 Coverage was greatest in `r casesByCourtDeac %>% slice_max(obsCases, n = 1) %>% pull(jpCourt)`: observers recorded data for 2,349
- cases, representing `r scales::percent(max(casesByCourtDeac$perObsCases), accuracy = .1)` coverage. Although observers were in nine courts during the observation period, data from two courts (4-2 and 5-2) are not reported here due to a limited sample of observed cases.
+ cases, representing `r scales::percent(max(jpCasesDeac$perAllCases), accuracy = .1)` coverage. Although observers were in nine courts during the observation period, data from two courts (4-2 and 5-2) are not reported here due to a limited sample of observed cases.
 
 ::: {.panel-tabset}
 
@@ -2039,7 +2039,7 @@ highchart()%>%
   hc_plotOptions(column = list(borderWidth = 0)) %>%
   hc_xAxis(categories = unique(plotntvDeac$jpCourt), labels = list(enabled = TRUE)) %>%
   hc_yAxis(title = list(text = ""), labels = list(format = "{value}%"), max = 100) %>%
-  hc_tooltip(pointFormat = "Percentage of Cases with Confirmed NTV: {point.y:.2f}%") %>%
+  hc_tooltip(pointFormat = "Percentage of Cases with Discussed NTV: {point.y:.2f}%") %>%
   #hc_colors(palette_cpal_main)%>%
   hc_add_theme(hc_cpal)
 
