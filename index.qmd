@@ -20,17 +20,8 @@ library(gridExtra)
 library(highcharter)
 library(dplyr)
 
-
-# libDB <- "C:/Users/Michael/CPAL Dropbox/"
-#libDB <- "C:/Users/taylo/CPAL Dropbox/"
-libDB <- "/Users/anushachowdhury/CPAL Dropbox/"
-
-# googlesheets4::gs4_auth(email = "michael@childpovertyactionlab.org")
-#googlesheets4::gs4_auth(email = "taylor@childpovertyactionlab.org")
-googlesheets4::gs4_auth(email = "anusha@childpovertyactionlab.org")
-
 courtobs <- read_sheet(ss = "https://docs.google.com/spreadsheets/d/1O9P06SgvZ_nRGc64W2OsSjyX9iCS_LkcsG9087HNTuk",
-                               sheet = "Form Responses 1") %>%
+                       sheet = "Form Responses 1") %>%
   janitor::clean_names(.) %>%
   rename("timeStamp"="timestamp",
          "observer"="observer",
@@ -53,15 +44,13 @@ courtobs <- read_sheet(ss = "https://docs.google.com/spreadsheets/d/1O9P06SgvZ_n
          "jpRuled"="the_jp_ruled_in_favor_of",
          "outcomeOther"="if_you_selected_other_please_specify_the_outcome_of_the_case_below",
          "otherNotes"="additional_case_notes"
-) %>%
+  ) %>%
   filter(!jpCourt %in% c("5-2", "3-2", "2-1", '2-2'),
          !is.na(jpCourt),
          observationDate <= as.Date("2024-04-26")
-         ) %>%
+  ) %>%
   mutate(jpCourt = paste("Court", jpCourt),
          observationDate = as.Date(observationDate, format = "%Y-%m-%d"))
-
-#dallas county evictions dataset
 evictions <- rio::import(paste0(libDB, "Data Library/Dallas County/Eviction Records/Data/Dallas County Eviction Master/EvictionRecords_Master.csv")) %>%
   mutate(jpCourt = str_remove(court, "Court  "))%>%
   filter(!jpCourt %in% c("5-2", "3-2", "NA"))%>%
@@ -74,7 +63,7 @@ evictions <- rio::import(paste0(libDB, "Data Library/Dallas County/Eviction Reco
       st_transform(crs = 4326),
     join = st_within
   ) %>%
-  filter(!is.na(NAME)) %>%  
+  filter(!is.na(NAME)) %>%
   as.data.frame() %>%
   select(-geometry)
 
@@ -690,42 +679,8 @@ courtobs23 <- courtobs%>%
 courtobs24 <- courtobs %>%
   filter(observationDate >= as.Date("2023-06-20") & observationDate < as.Date("2024-04-26"))
 
-# deac <- read_sheet("https://docs.google.com/spreadsheets/d/11X91mVG7XSTDk3fjb8gCiyXDToh80yyvrVdLJiZOpOw/edit?gid=480254842#gid=480254842", col_types = "c") %>%
-deac <- read.csv('data/CPAL_DEAC_Court_Obs_Clean_010325 (2).csv') %>%
-  rename(caseNumber = case_number,
-         observationDate = appearance_date,
-         plaintiffName = plaintiff,
-         plaintiffDesignee = plaintiff_present,
-         plaintiffRep = plaintiff_rep,
-         defName = defendant,
-         defAppear = defendant_present,
-         defRep = defendant_rep,
-         evicReason = reason, 
-         noticeVacate = ntv,
-         jpRuled = outcome,
-         jpCourt = court,
-         docketStart = docket_start_time,
-         docketEnd = docket_end_time,
-         caseType = case_type,
-         noticeConfirm = ntv_confirm,
-         outcomeOther = outcome_other,
-         otherNotes = notes)%>%
-  filter(!jpCourt %in% c("5-2", "4-2"),
-         !is.na(jpCourt),
-         observationDate >= as.Date("2024-09-26")
-         ) %>%
-  mutate(jpCourt = paste("Court", jpCourt),
-         observationDate = as.Date(observationDate, format = "%Y-%m-%d"),
-         observationDate = if_else(
-           format(observationDate, "%Y-%m") == "2025-12",
-           as.Date(paste0("2024-12-", format(observationDate, "%d"))),
-           observationDate)
-         ) %>%
-  filter(jpCourt != 'Court ')
-  
-# evicNonDuplicates <- deac %>%
-#   filter(!caseNumber %in% evictions$case_number)
-# write.csv(evicNonDuplicates, "data/Evic Non Duplicates.csv")
+
+deac <- read.csv('data/DEAC Processed.csv')
 reference_date <- "1899-12-30"
 deac$docketStart <- paste(reference_date, deac$docketStart)  # Combine with reference date
 deac$docketEnd <- paste(reference_date, deac$docketEnd)  # Combine with reference date
@@ -733,32 +688,6 @@ deac$docketEnd <- paste(reference_date, deac$docketEnd)  # Combine with referenc
 # Convert the combined datetime strings to POSIXct
 deac$docketStart <- as.POSIXct(deac$docketStart, format="%Y-%m-%d %I:%M:%S %p", tz="UTC")
 deac$docketEnd <- as.POSIXct(deac$docketEnd, format="%Y-%m-%d %I:%M:%S %p", tz="UTC")
-
-duplicateCases <- deac %>%
-  group_by(caseNumber) %>%
-  summarise(n = n())
-
-# casesByCourtDeac <- deac %>%
-#   group_by(jpCourt) %>%
-#   summarise(n = n()) %>%
-#   mutate(per = round(n/sum(n)*100, 2))%>%
-#   janitor::adorn_totals()
-
-# deacFuture <- deac %>%
-#   filter(observationDate > "2025-01-31")
-# write.csv(deacFuture, "data/Cases after January 2025.csv")
-
-# deac <- deac %>% anti_join(courtobs)
-# deac <- deac %>% anti_join(courtobs, by = "caseNumber")
-duplicates <- deac %>%
-  filter(caseNumber %in% courtobs$caseNumber) #%>%
-deac <- deac %>%
-  filter(caseNumber != "Unknown")
-  # group_by(jpCourt) %>%
-  # summarise(n = n())%>%
-  # mutate(percent = (n / sum(n)) * 100) %>%
-  # janitor::adorn_totals()
-# write.csv(duplicates, "data/DEAC and Court Obs Overlap.csv")
 
 obsCourtDeac <- evictions %>%
   filter(appearance_date >= as.Date("2024-09-26") & appearance_date <= as.Date("2025-01-18")) %>%
@@ -776,12 +705,6 @@ jpCasesDeac <- deac %>%
   left_join(., obsCourtDeac) %>%
   janitor::adorn_totals() %>%
   mutate(perAllCases = obsCases/totEvic)
-
-# deacCourt11 <- deac %>%
-#   filter(jpCourt == "Court 1-1")
-# evicCourt11 <- evictions %>%
-#   filter(jpCourt == "Court 1-1",
-#          appearance_date >= as.Date("2024-09-26") & appearance_date <= as.Date("2025-01-18"))
 
 totReasonDeac <- deac %>%
   filter(!is.na(jpCourt),
@@ -821,28 +744,6 @@ evicReasonDeac <- deac %>%
   mutate(perCases = count/sum(count)) %>%
   ungroup(.) %>%
   rbind(., totReasonDeac)
-
-# evicReasonAppear <- deac%>%
-#   filter(!is.na(jpCourt),
-#          defAppear == "Yes") %>%
-#   mutate(evicClean = ifelse(str_detect(evicReason, ","), "Multiple Reasons", evicReason),
-#          evicClean = case_when(
-#            is.na(evicClean) ~ "Unknown",
-#            evicClean == "Holdover" ~ "Holdover/lease expiration",
-#            evicClean == "Lease expired" ~ "Holdover/lease expiration",
-#            evicClean == "Other" ~ "Unknown",
-#            evicClean == "LV" ~ "Violated lease",
-#            TRUE ~ evicClean
-#            )) %>%
-#   group_by(#jpCourt, 
-#            evicClean, #defAppear
-#            observer
-#            ) %>%
-#   summarize(count = n()) %>%
-#   mutate(perCases = count/sum(count))#%>%
-  # ungroup(.) %>%
-  # rbind(., totReasonDeac)
-# write.csv(evicReasonAppear, "data/Eviction Reason Observer Breakdown.csv")
 
 
 defAppearDeac <- deac %>%
@@ -896,31 +797,7 @@ defRepresentDeac <- deac %>%
   group_by(jpCourt) %>%
   mutate(perRep = count/sum(count)) %>%
   ungroup()
-# write.csv(defRepresentDeac, "data/Defendant Representation Breakdown.csv")
-# write.csv(deac %>% group_by(defAppear) %>% summarise(n = n()), 'data/Defendant Appearance Breakdown.csv')
-# defRepresentDeacCsv <- deac %>%
-#   filter(!is.na(jpCourt),
-#          defAppear == "Yes",
-#          observationDate >= as.Date("2024-09-26") & observationDate < as.Date("2025-01-18")
-#          ) %>%
-#   mutate(legalRep = ifelse(defRep == "Yes, an attorney was present for the defendant.", "Attorney present for tenant (Defendant)", "No attorney present for tenant")) %>%
-#   group_by(#jpCourt, 
-#            legalRep, observer) %>%
-#   summarize(count = n()) %>%
-#   mutate(perRep = count/sum(count))
-  # mutate(perRep = count/sum(count)) %>%
-  # ungroup(.) %>%
-  # group_by(legalRep) %>%
-  # group_map(~ .x %>%
-  #         janitor::adorn_totals(),.keep = T) %>% 
-  # bind_rows() %>%
-  # mutate(test = lag(legalRep),
-  #        legalRep = ifelse(str_detect(legalRep, "tenant"), legalRep, test)) %>%
-  # select(-test) %>%
-  # group_by(jpCourt) %>%
-  # mutate(perRep = count/sum(count)) %>%
-  # ungroup()
-# write.csv(defRepresentDeacCsv, "data/Defendant Representation Observer Breakdown.csv")
+
 
 ntvDeac <- deac %>%
   filter(!is.na(noticeVacate),
@@ -958,22 +835,7 @@ hearingtimeDeac <- deac %>%
   janitor::adorn_totals() %>%
   mutate(AvgCaseLength = SumDockLength/CasesObs) %>%
   select(-SumDockLength)
-# hearingtimeDeacObserver <- deac %>%
-#   filter(observationDate >= as.Date("2024-09-26") & observationDate <= as.Date("2025-01-18"))%>%
-#   mutate(dockLength = docketEnd-docketStart) %>%
-#   filter(!is.na(dockLength))%>%
-#   group_by(jpCourt, observationDate, observer) %>%
-#   summarize(CasesObs = n(),
-#             AvgDockLength = mean(dockLength, na.rm=TRUE)) %>%
-#   ungroup() %>%
-#   group_by(jpCourt, observer)%>%
-#   summarize(CasesObs = sum(CasesObs),
-#             SumDockLength = as.numeric(sum(AvgDockLength))) %>%
-#   ungroup(.) %>%
-#   janitor::adorn_totals() %>%
-#   mutate(AvgCaseLength = SumDockLength/CasesObs) %>%
-#   select(-SumDockLength)
-# write.csv(hearingtimeDeacObserver, 'data/hearingtimeDeacObserver.csv')
+
 
 caseOutcomeDeac <- deac %>%
   filter(!is.na(jpCourt),
@@ -1039,17 +901,8 @@ outcomeRepDeac <- deac %>%
   summarize(count = n()) %>%
   mutate(perOutcome = count/sum(count)) %>%
   ungroup(.)
-# write.csv(outcomeRepDeac, 'data/Outcome Representation Graph Data.csv')
 
-outcomeRepCheck <- deac %>%
-  filter(!is.na(jpCourt),
-         observationDate >= as.Date("2024-09-26") & observationDate <= as.Date("2025-01-18"),
-         # defRep == "Yes, an attorney was present for the defendant." | defRep == "No, the defendant did not have additional representation."
-         )  %>%
-  group_by(defRep#, jpRuled
-           ) %>%
-  summarise(n = n())
-write.csv(outcomeRepCheck, "data/Legal Rep Breakdown.csv")
+
 
 defRepAppear <- deac %>%
   group_by(defRep, defAppear) %>%
@@ -1098,8 +951,8 @@ color, and the likelihood of receiving an eviction judgment is highest
 for mothers with children.
 
 **Between
-`r format(min(totevic4$filed_date, na.rm = TRUE), "%B %d, %Y")` and
-`r format(max(totevic4$filed_date, na.rm = TRUE), "%B %d, %Y")`,
+`r format(min(as.Date(totevic4$filed_date), na.rm = TRUE), "%B %d, %Y")` and
+`r format(max(as.Date(totevic4$filed_date), na.rm = TRUE), "%B %d, %Y")`,
 `r prettyNum(nrow(totevic4), big.mark = ',')` evictions were filed in
 Dallas County, an average of `r avgevic3` per day.** This represents a
 `r paste0(chgevic3, "%")` decrease over this same time period in 2023 and
@@ -1282,8 +1135,8 @@ and cleans the data, as needed.
 
 # Case Observation Findings
 
-From `r format(min(deac$observationDate, na.rm = TRUE), "%B %d, %Y")` through
-`r format(max(deac$observationDate, na.rm = TRUE), "%B %d, %Y")`, 7 SMU law students and 3 research assistants
+From `r format(min(as.Date(deac$observationDate), na.rm = TRUE), "%B %d, %Y")` through
+`r format(max(as.Date(deac$observationDate), na.rm = TRUE), "%B %d, %Y")`, 7 SMU law students and 3 research assistants
 observed **`r formattable::comma(nrow(deac), digits = 0)`
 cases**,
 representing **`r paste0(jpCasesCtyDeac$perAllCases*100, "% coverage")`** of all initially scheduled hearings across seven courts. 
