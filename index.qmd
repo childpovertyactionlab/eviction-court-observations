@@ -896,7 +896,8 @@ defRepresentDeac <- deac %>%
   group_by(jpCourt) %>%
   mutate(perRep = count/sum(count)) %>%
   ungroup()
-
+# write.csv(defRepresentDeac, "data/Defendant Representation Breakdown.csv")
+# write.csv(deac %>% group_by(defAppear) %>% summarise(n = n()), 'data/Defendant Appearance Breakdown.csv')
 # defRepresentDeacCsv <- deac %>%
 #   filter(!is.na(jpCourt),
 #          defAppear == "Yes",
