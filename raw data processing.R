@@ -65,8 +65,8 @@ deac <- read.csv('data/CPAL_DEAC_Court_Obs_Clean_010325 (2).csv') %>%
          otherNotes = notes)%>%
   filter(!jpCourt %in% c("5-2", "4-2"),
          !is.na(jpCourt),
-         observationDate >= as.Date("2024-09-26")
-  ) %>%
+         observationDate >= as.Date("2024-09-26") & observationDate <= as.Date("2025-01-18")
+         ) %>%
   mutate(jpCourt = paste("Court", jpCourt),
          observationDate = as.Date(observationDate, format = "%Y-%m-%d"),
          observationDate = if_else(
@@ -185,4 +185,8 @@ outcomeRepCheck <- deac %>%
   ) %>%
   summarise(n = n())
 write.csv(outcomeRepCheck, "data/Legal Rep Breakdown.csv")
+
+jpRuledSummary<- deac %>% group_by(jpRuled) %>% summarise(n = n()) %>%
+  mutate(per = n/sum(n)) %>%
+  janitor::adorn_totals()
 
