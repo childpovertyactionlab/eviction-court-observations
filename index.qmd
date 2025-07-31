@@ -21,6 +21,7 @@ library(highcharter)
 library(dplyr)
 
 libDB <- '/Users/anushachowdhury/CPAL Dropbox/'
+libGH <- '/Users/anushachowdhury/Documents/GitHub/'
 
 courtobs <- read_sheet(ss = "https://docs.google.com/spreadsheets/d/1O9P06SgvZ_nRGc64W2OsSjyX9iCS_LkcsG9087HNTuk",
                        sheet = "Form Responses 1") %>%
@@ -53,7 +54,8 @@ courtobs <- read_sheet(ss = "https://docs.google.com/spreadsheets/d/1O9P06SgvZ_n
   ) %>%
   mutate(jpCourt = paste("Court", jpCourt),
          observationDate = as.Date(observationDate, format = "%Y-%m-%d"))
-evictions <- rio::import(paste0(libDB, "Data Library/Dallas County/Eviction Records/Data/Dallas County Eviction Master/EvictionRecords_Master.csv")) %>%
+# evictions <- rio::import(paste0(libDB, "Data Library/Dallas County/Eviction Records/Data/Dallas County Eviction Master/EvictionRecords_Master.csv")) %>%
+evictions <- rio::import(paste0(libDB, 'Data Library/Dallas County/Eviction Records/Data/Dallas County Eviction Master/Eviction Cases Test.csv')) %>%
   mutate(jpCourt = str_remove(court, "Court  "))%>%
   filter(!jpCourt %in% c("5-2", "3-2", "NA"))%>%
   distinct()%>%
