@@ -55,7 +55,7 @@ courtobs <- read_sheet(ss = "https://docs.google.com/spreadsheets/d/1O9P06SgvZ_n
   mutate(jpCourt = paste("Court", jpCourt),
          observationDate = as.Date(observationDate, format = "%Y-%m-%d"))
 # evictions <- rio::import(paste0(libDB, "Data Library/Dallas County/Eviction Records/Data/Dallas County Eviction Master/EvictionRecords_Master.csv")) %>%
-evictions <- rio::import(paste0(libDB, 'Data Library/Dallas County/Eviction Records/Data/Dallas County Eviction Master/Eviction Cases Test.csv')) %>%
+evictions <- rio::import(paste0(libDB, 'Data Library/Dallas County/Eviction Records/Data/Dallas County Eviction Master/UpdatedEvictions_Deidentified.csv')) %>%
   mutate(jpCourt = str_remove(court, "Court  "))%>%
   filter(!jpCourt %in% c("5-2", "3-2", "NA"))%>%
   distinct()%>%
@@ -67,7 +67,8 @@ evictions <- rio::import(paste0(libDB, 'Data Library/Dallas County/Eviction Reco
       st_transform(crs = 4326),
     join = st_within
   ) %>%
-  filter(!is.na(NAME)) %>%
+  filter(!is.na(NAME),
+         filed_date < '2025-07-01') %>%
   as.data.frame() %>%
   select(-geometry)
 
@@ -967,9 +968,6 @@ avgevicDeac <- round(nrow(totevicDeac)/totdaysDeac, digits = 1)
 
 ```
 
-
-
-
 <h2 style="font-size:48px;">
 
 Dallas Court Observation Project
@@ -986,13 +984,11 @@ for mothers with children.
 
 **Between
 `r format(min(as.Date(totevicDeac$filed_date), na.rm = TRUE), "%B %d, %Y")`
-and
-January 18, 2025,
-`r prettyNum(nrow(totevicDeac), big.mark = ',')` evictions were filed in
-Dallas County, an average of `r avgevicDeac` per day.** This represents an
-`r paste0(abs(chgevic23), "%")` decrease over this same time period in
-2023 and a `r paste0(abs(chgevic22), "%")` decrease over the same time
-period in 2022.
+and January 18, 2025, `r prettyNum(nrow(totevicDeac), big.mark = ',')`
+evictions were filed in Dallas County, an average of `r avgevicDeac` per
+day.** This represents an `r paste0(abs(chgevic23), "%")` decrease over
+this same time period in 2023 and a `r paste0(abs(chgevic22), "%")`
+decrease over the same time period in 2022.
 
 ```{r}
 #| fig-height: 4
@@ -1188,14 +1184,15 @@ through
 initially scheduled hearings across seven courts. Coverage was greatest
 in
 `r casesByCourtDeac %>% slice_max(obsCases, n = 1) %>% pull(jpCourt)`:
-observers recorded data for 2,349 cases, representing
+observers recorded data for 2,032 cases, representing
 `r scales::percent(max(jpCasesDeac$perAllCases), accuracy = .1)`
 coverage. Although observers were in nine courts during the observation
 period, data from two courts (4-2 and 5-2) are not reported here due to
 a limited sample of observed cases.
 
-::: panel-tabset
-## Fall 2024
+<!-- ::: panel-tabset -->
+
+<!-- ## Fall 2024 -->
 
 ```{r}
 #| fig-height: 4
@@ -1203,7 +1200,7 @@ a limited sample of observed cases.
 plotDeacCases <- jpCasesDeac %>%
   filter(!is.na(jpCourt) & obsCases > 1
          ) %>%
-  select(jpCourt, perAllCases) %>%
+  select(jpCourt, perAllCases, obsCases) %>%
   mutate(perAntCases = 1-perAllCases) %>%
   pivot_longer(cols = c("perAllCases", "perAntCases")) %>%
   rename(perCases = value) %>%
@@ -1230,7 +1227,14 @@ highchart()%>%
   hc_plotOptions(column = list(
     dataLabels = list(enabled = TRUE, format = "{value:.0f}%")
   )) %>%
-  hc_tooltip(pointFormat = "{series.name} cases: {point.y:.2f}%") %>%
+  hc_tooltip(
+    useHTML = TRUE,
+    pointFormat = paste0(
+      "<b>{series.name}</b><br>",
+      "Share: {point.y:.2f}%<br>",
+      "Observed Cases: {point.obsCases:,.0f}"
+    )
+  ) %>%
   hc_add_theme(hc_cpal)%>%
   hc_title(text = "Percent of Cases Observed in Fall 2024 Cycle")
 
@@ -1252,119 +1256,205 @@ jpCasesDeac %>%
 
 ```
 
-## Summer '23 - Spring '24
+<!-- ## Summer '23 - Spring '24 -->
 
-```{r, Cases Chart}
-#| fig-height: 4
-##### highchart 1 #####
-plotCases <- jpCasesObs24 %>%
-  filter(!is.na(jpCourt) & obsCases > 1) %>%
-  select(jpCourt, perAllCases) %>%
-  mutate(perAntCases = 1-perAllCases) %>%
-  pivot_longer(cols = c("perAllCases", "perAntCases")) %>%
-  rename(perCases = value) %>%
-  mutate(type = ifelse(name == "perAllCases", "Observed", "Not Observed")) %>%
-  select(-name) %>%
-  mutate(perCases=100*perCases)
+<!-- ```{r, Cases Chart} -->
 
-highchart()%>%
-  hc_chart(type = 'column')%>%
-  hc_add_series(plotCases,
-                type = 'column',
-                mapping = hcaes(
-                  x = jpCourt,
-                  y = round(perCases, 2),
-                  group = type,
-                  color = ifelse(jpCourt == "Total", 
-                                 c('#4B1707','#ED683F')[match(type, unique(plotCases$type))], 
-                                 palette_cpal_main[match(type, unique(plotCases$type))])),
-                color = c('#008097', '#042d33'),
-                dataLabels = list(enabled = TRUE, format = "{point.y:.0f}%", style = list(fontWeight = "bold")))%>%
-  hc_xAxis(categories = unique(plotCases$jpCourt)) %>%
-  hc_yAxis(labels = list(format = "{value: .0f}%"), 
-           max = 100) %>%
-  hc_plotOptions(column = list(
-    dataLabels = list(enabled = TRUE, format = "{value:.0f}%")
-  )) %>%
-  hc_tooltip(pointFormat = "{series.name} cases: {point.y:.2f}%") %>%
-  hc_add_theme(hc_cpal)%>%
-  hc_title(text = "Percent of Cases Observed in Summer '23 - Spring '24 Cycle")
+<!-- #| fig-height: 4 -->
 
-jpCasesObs24 %>%
-  ungroup(.) %>%
-  transmute('JP Court' = jpCourt,
-            'Observed Cases' = scales::number(obsCases, big.mark = ","),
-            'Share of Total Observed Cases (%)' = scales::percent(perObsCases, accuracy = 0.1),
-            'Scheduled Hearings*' = scales::number(totEvic, big.mark = ","),
-            'Observed Cases by Court (%)' = scales::percent(perAllCases, accuracy = 0.1)) %>%
-    datatable(options = list(paging = FALSE,
-                           searching = FALSE,
-                           info = FALSE
-                           ),
-            rownames = FALSE) %>%
-  formatStyle(columns = colnames(.), fontWeight = 'bold', `text-align` = 'left') %>%
-  formatStyle(columns = colnames(.), fontFamily = "Poppins")
+<!-- ##### highchart 1 ##### -->
 
+<!-- plotCases <- jpCasesObs24 %>% -->
 
+<!--   filter(!is.na(jpCourt) & obsCases > 1) %>% -->
 
-```
+<!--   select(jpCourt, perAllCases) %>% -->
 
-## Fall '22 - Spring '23
+<!--   mutate(perAntCases = 1-perAllCases) %>% -->
 
-```{r}
-#| fig-height: 4
+<!--   pivot_longer(cols = c("perAllCases", "perAntCases")) %>% -->
 
-plotCases23 <- jpCasesObs23 %>%
-  filter(!is.na(jpCourt) & obsCases > 1) %>%
-  select(jpCourt, perAllCases) %>%
-  mutate(perAntCases = 1-perAllCases) %>%
-  pivot_longer(cols = c("perAllCases", "perAntCases")) %>%
-  rename(perCases = value) %>%
-  mutate(type = ifelse(name == "perAllCases", "Observed", "Not Observed")) %>%
-  select(-name) %>%
-  mutate(perCases=100*perCases)
+<!--   rename(perCases = value) %>% -->
 
-highchart()%>%
-  hc_chart(type = 'column')%>%
-  hc_add_series(plotCases23,
-                type = 'column',
-                mapping = hcaes(
-                  x = jpCourt,
-                  y = round(perCases, 2),
-                  group = type,
-                  color = ifelse(jpCourt == "Total", 
-                                 c('#4B1707','#ED683F')[match(type, unique(plotCases23$type))], 
-                                 palette_cpal_main[match(type, unique(plotCases23$type))])),
-                color = c('#008097', '#042d33'),
-                dataLabels = list(enabled = TRUE, format = "{point.y:.0f}%", style = list(fontWeight = "bold")))%>%
-  hc_xAxis(categories = unique(plotCases23$jpCourt)) %>%
-  hc_yAxis(labels = list(format = "{value: .0f}%"), 
-           max = 100) %>%
-  hc_plotOptions(column = list(
-    dataLabels = list(enabled = TRUE, format = "{value:.0f}%")
-  )) %>%
-  hc_tooltip(pointFormat = "{series.name} cases: {point.y:.2f}%") %>%
-  hc_add_theme(hc_cpal)%>%
-  hc_title(text = "Percent of Cases Observed in Fall '22 - Spring '23 Cycle")
+<!--   mutate(type = ifelse(name == "perAllCases", "Observed", "Not Observed")) %>% -->
 
-jpCasesObs23 %>%
-  ungroup(.) %>%
-  transmute('JP Court' = jpCourt,
-            'Observed Cases' = scales::number(obsCases, big.mark = ","),
-            'Share of Total Observed Cases (%)' = scales::percent(perObsCases, accuracy = 0.1),
-            'Scheduled Hearings*' = scales::number(totEvic, big.mark = ","),
-            'Observed Cases by Court (%)' = scales::percent(perAllCases, accuracy = 0.1)) %>%
-    datatable(options = list(paging = FALSE,
-                           searching  = FALSE,
-                           info = FALSE
-                           ),
-            rownames = FALSE) %>%
-  formatStyle(columns = colnames(.), fontWeight = 'bold', `text-align` = 'left') %>%
-  formatStyle(columns = colnames(.), fontFamily = "Poppins")
-  
+<!--   select(-name) %>% -->
 
-```
-:::
+<!--   mutate(perCases=100*perCases) -->
+
+<!-- highchart()%>% -->
+
+<!--   hc_chart(type = 'column')%>% -->
+
+<!--   hc_add_series(plotCases, -->
+
+<!--                 type = 'column', -->
+
+<!--                 mapping = hcaes( -->
+
+<!--                   x = jpCourt, -->
+
+<!--                   y = round(perCases, 2), -->
+
+<!--                   group = type, -->
+
+<!--                   color = ifelse(jpCourt == "Total",  -->
+
+<!--                                  c('#4B1707','#ED683F')[match(type, unique(plotCases$type))],  -->
+
+<!--                                  palette_cpal_main[match(type, unique(plotCases$type))])), -->
+
+<!--                 color = c('#008097', '#042d33'), -->
+
+<!--                 dataLabels = list(enabled = TRUE, format = "{point.y:.0f}%", style = list(fontWeight = "bold")))%>% -->
+
+<!--   hc_xAxis(categories = unique(plotCases$jpCourt)) %>% -->
+
+<!--   hc_yAxis(labels = list(format = "{value: .0f}%"),  -->
+
+<!--            max = 100) %>% -->
+
+<!--   hc_plotOptions(column = list( -->
+
+<!--     dataLabels = list(enabled = TRUE, format = "{value:.0f}%") -->
+
+<!--   )) %>% -->
+
+<!--   hc_tooltip(pointFormat = "{series.name} cases: {point.y:.2f}%") %>% -->
+
+<!--   hc_add_theme(hc_cpal)%>% -->
+
+<!--   hc_title(text = "Percent of Cases Observed in Summer '23 - Spring '24 Cycle") -->
+
+<!-- jpCasesObs24 %>% -->
+
+<!--   ungroup(.) %>% -->
+
+<!--   transmute('JP Court' = jpCourt, -->
+
+<!--             'Observed Cases' = scales::number(obsCases, big.mark = ","), -->
+
+<!--             'Share of Total Observed Cases (%)' = scales::percent(perObsCases, accuracy = 0.1), -->
+
+<!--             'Scheduled Hearings*' = scales::number(totEvic, big.mark = ","), -->
+
+<!--             'Observed Cases by Court (%)' = scales::percent(perAllCases, accuracy = 0.1)) %>% -->
+
+<!--     datatable(options = list(paging = FALSE, -->
+
+<!--                            searching = FALSE, -->
+
+<!--                            info = FALSE -->
+
+<!--                            ), -->
+
+<!--             rownames = FALSE) %>% -->
+
+<!--   formatStyle(columns = colnames(.), fontWeight = 'bold', `text-align` = 'left') %>% -->
+
+<!--   formatStyle(columns = colnames(.), fontFamily = "Poppins") -->
+
+<!-- ``` -->
+
+<!-- ## Fall '22 - Spring '23 -->
+
+<!-- ```{r} -->
+
+<!-- #| fig-height: 4 -->
+
+<!-- plotCases23 <- jpCasesObs23 %>% -->
+
+<!--   filter(!is.na(jpCourt) & obsCases > 1) %>% -->
+
+<!--   select(jpCourt, perAllCases) %>% -->
+
+<!--   mutate(perAntCases = 1-perAllCases) %>% -->
+
+<!--   pivot_longer(cols = c("perAllCases", "perAntCases")) %>% -->
+
+<!--   rename(perCases = value) %>% -->
+
+<!--   mutate(type = ifelse(name == "perAllCases", "Observed", "Not Observed")) %>% -->
+
+<!--   select(-name) %>% -->
+
+<!--   mutate(perCases=100*perCases) -->
+
+<!-- highchart()%>% -->
+
+<!--   hc_chart(type = 'column')%>% -->
+
+<!--   hc_add_series(plotCases23, -->
+
+<!--                 type = 'column', -->
+
+<!--                 mapping = hcaes( -->
+
+<!--                   x = jpCourt, -->
+
+<!--                   y = round(perCases, 2), -->
+
+<!--                   group = type, -->
+
+<!--                   color = ifelse(jpCourt == "Total",  -->
+
+<!--                                  c('#4B1707','#ED683F')[match(type, unique(plotCases23$type))],  -->
+
+<!--                                  palette_cpal_main[match(type, unique(plotCases23$type))])), -->
+
+<!--                 color = c('#008097', '#042d33'), -->
+
+<!--                 dataLabels = list(enabled = TRUE, format = "{point.y:.0f}%", style = list(fontWeight = "bold")))%>% -->
+
+<!--   hc_xAxis(categories = unique(plotCases23$jpCourt)) %>% -->
+
+<!--   hc_yAxis(labels = list(format = "{value: .0f}%"),  -->
+
+<!--            max = 100) %>% -->
+
+<!--   hc_plotOptions(column = list( -->
+
+<!--     dataLabels = list(enabled = TRUE, format = "{value:.0f}%") -->
+
+<!--   )) %>% -->
+
+<!--   hc_tooltip(pointFormat = "{series.name} cases: {point.y:.2f}%") %>% -->
+
+<!--   hc_add_theme(hc_cpal)%>% -->
+
+<!--   hc_title(text = "Percent of Cases Observed in Fall '22 - Spring '23 Cycle") -->
+
+<!-- jpCasesObs23 %>% -->
+
+<!--   ungroup(.) %>% -->
+
+<!--   transmute('JP Court' = jpCourt, -->
+
+<!--             'Observed Cases' = scales::number(obsCases, big.mark = ","), -->
+
+<!--             'Share of Total Observed Cases (%)' = scales::percent(perObsCases, accuracy = 0.1), -->
+
+<!--             'Scheduled Hearings*' = scales::number(totEvic, big.mark = ","), -->
+
+<!--             'Observed Cases by Court (%)' = scales::percent(perAllCases, accuracy = 0.1)) %>% -->
+
+<!--     datatable(options = list(paging = FALSE, -->
+
+<!--                            searching  = FALSE, -->
+
+<!--                            info = FALSE -->
+
+<!--                            ), -->
+
+<!--             rownames = FALSE) %>% -->
+
+<!--   formatStyle(columns = colnames(.), fontWeight = 'bold', `text-align` = 'left') %>% -->
+
+<!--   formatStyle(columns = colnames(.), fontFamily = "Poppins") -->
+
+<!-- ``` -->
+
+<!-- ::: -->
 
 ::: column-margin
 The scheduled hearings indicator was calculated based on the hearing
@@ -1382,8 +1472,9 @@ relative to the number of cases heard during a docket.
 
 **Most eviction cases were due to nonpayment of rent.**
 
-::: panel-tabset
-## Fall 2024
+<!-- ::: panel-tabset -->
+
+<!-- ## Fall 2024 -->
 
 ```{r}
 #| fig-height: 5
@@ -1418,11 +1509,16 @@ for (court in unique(plotReasonDeac$jpCourt)){
       data = court_data,
       hcaes(x = evicClean,
             y = round(perCases*100, 2),
-            color = color),
+            color = color,
+            count = count),
       name = 'Percent',
       type = "pie",
       dataLabels = list(enabled = FALSE),
-      tooltip = list(pointFormat = "{point.name}: <b>{point.y:.2f}%</b>"),
+      tooltip = list(
+        pointFormat = paste0(
+          "{point.name}: <b>{point.y:.2f}%</b><br>",
+          "Number of Cases: {point.count:,.0f}"
+        )),
       showInLegend=TRUE,
       colorByPoint = TRUE
       ) %>%
@@ -1454,155 +1550,234 @@ chart_container
 
 ```
 
-## Summer '23 - Spring '24
+<!-- ## Summer '23 - Spring '24 -->
 
-```{r}
-#| fig-height: 5
+<!-- ```{r} -->
 
-plotReason24 <- evicReason24
+<!-- #| fig-height: 5 -->
 
-evicClean_colors <- c(
-  "Holdover/lease expiration" = "#0047bd",
-  "Multiple Reasons" = "#a80092",
-  "Non-payment of rent" = "#042d33",
-  "Unknown" = "#ed018c",
-  "Violated lease" = "#008097"
-  )
+<!-- plotReason24 <- evicReason24 -->
 
-chart_container <- htmltools::div(style = "display: flex; flex-wrap: wrap; justify-content: center; overflow-y: hidden; gap: 5px") 
+<!-- evicClean_colors <- c( -->
 
-createLegendBox <- function(color, label) {
-  htmltools::div(
-    style = paste0("display: flex; align-items: center; margin-right: 15px;"),
-    htmltools::div(style = paste0("width: 20px; height: 20px; background-color: ", color, "; margin-right: 5px;")),
-    htmltools::span(label)
-  )
-}
+<!--   "Holdover/lease expiration" = "#0047bd", -->
 
-for (court in unique(plotReason24$jpCourt)){
-  court_data <- plotReason24 %>% filter(jpCourt == court)%>%
-    mutate(color = evicClean_colors[evicClean])
-  hc<- highchart() %>%
-    hc_chart(type = "pie") %>%
-    hc_add_series(
-      data = court_data,
-      hcaes(x = evicClean,
-            y = round(perCases*100, 2),
-            color = color),
-      name = 'Percent',
-      type = "pie",
-      dataLabels = list(enabled = FALSE),
-      tooltip = list(pointFormat = "{point.name}: <b>{point.y:.2f}%</b>"),
-      showInLegend=TRUE,
-      colorByPoint = TRUE
-      ) %>%
-    hc_legend(enabled = FALSE)%>%
-    hc_title(text = paste(court),
-             style = list(fontSize = "15px", fontWeight = 'bold'))%>%
-    hc_size(height=60, width = 200)%>%
-    hc_add_theme(hc_cpal)
-      
-    chart_container <- htmltools::tagAppendChild(chart_container, 
-                                                 htmltools::div(style = "width: 200px; height: 180px; margin: 5px;", hc)) 
-    }
+<!--   "Multiple Reasons" = "#a80092", -->
 
-legend_container <- htmltools::div(
-  style = "display: flex; flex-wrap: wrap; justify-content: center; margin-top: 10px;"
-)
+<!--   "Non-payment of rent" = "#042d33", -->
 
+<!--   "Unknown" = "#ed018c", -->
 
-for (reason in names(evicClean_colors)) {
-  legend_container <- htmltools::tagAppendChild(legend_container, 
-                                               createLegendBox(evicClean_colors[reason], reason))
-}
+<!--   "Violated lease" = "#008097" -->
 
-chart_container <- htmltools::tagAppendChild(chart_container, legend_container)
+<!--   ) -->
 
+<!-- chart_container <- htmltools::div(style = "display: flex; flex-wrap: wrap; justify-content: center; overflow-y: hidden; gap: 5px")  -->
 
-chart_container
-```
+<!-- createLegendBox <- function(color, label) { -->
 
-## Fall '22 - Spring '23
+<!--   htmltools::div( -->
 
-```{r}
-#| fig-height: 5
+<!--     style = paste0("display: flex; align-items: center; margin-right: 15px;"), -->
 
-plotReason23 <- evicReason23
+<!--     htmltools::div(style = paste0("width: 20px; height: 20px; background-color: ", color, "; margin-right: 5px;")), -->
 
-evicClean_colors <- c(
-  "Holdover/lease expiration" = "#0047bd",
-  "Multiple Reasons" = "#a80092",
-  "Non-payment of rent" = "#042d33",
-  "Unknown" = "#ed018c",
-  "Violated lease" = "#008097"
-  )
+<!--     htmltools::span(label) -->
 
-chart_container <- htmltools::div(style = "display: flex; 
-                                  flex-wrap: wrap; 
-                                  justify-content: center; 
-                                  overflow-y: hidden; 
-                                  gap: 5px") 
+<!--   ) -->
 
-createLegendBox <- function(color, label) {
-  htmltools::div(
-    style = paste0("display: flex; align-items: center; margin-right: 15px;"),
-    htmltools::div(style = paste0("width: 20px; height: 20px; background-color: ", color, "; margin-right: 5px;")),
-    htmltools::span(label)
-  )
-}
+<!-- } -->
 
-for (court in unique(plotReason23$jpCourt)){
-  court_data <- plotReason23 %>% filter(jpCourt == court)%>%
-    mutate(color = evicClean_colors[evicClean])
-  hc<- highchart() %>%
-    hc_chart(type = "pie") %>%
-    hc_add_series(
-      data = court_data,
-      hcaes(x = evicClean,
-            y = round(perCases*100, 2),
-            color = color),
-      name = 'Percent',
-      type = "pie",
-      dataLabels = list(enabled = FALSE),
-      tooltip = list(pointFormat = "{point.name}: <b>{point.y:.2f}%</b>"),
-      showInLegend=TRUE,
-      colorByPoint = TRUE
-      ) %>%
-    hc_legend(enabled = FALSE)%>%
-    hc_title(text = paste(court),
-             style = list(fontSize = "15px", fontWeight = 'bold'))%>%
-    hc_size(height=60, width = 200)%>%
-    hc_add_theme(hc_cpal)
-      
-    chart_container <- htmltools::tagAppendChild(chart_container, 
-                                                 htmltools::div(style = "width: 200px; height: 180px; margin: 5px;", hc)) 
-    }
+<!-- for (court in unique(plotReason24$jpCourt)){ -->
 
-legend_container <- htmltools::div(
-  style = "display: flex; flex-wrap: wrap; justify-content: center; margin-top: 10px;"
-)
+<!--   court_data <- plotReason24 %>% filter(jpCourt == court)%>% -->
 
+<!--     mutate(color = evicClean_colors[evicClean]) -->
 
-for (reason in names(evicClean_colors)) {
-  legend_container <- htmltools::tagAppendChild(legend_container, 
-                                               createLegendBox(evicClean_colors[reason], reason))
-}
+<!--   hc<- highchart() %>% -->
 
-chart_container <- htmltools::tagAppendChild(chart_container, legend_container)
+<!--     hc_chart(type = "pie") %>% -->
 
+<!--     hc_add_series( -->
 
-chart_container
-```
-:::
+<!--       data = court_data, -->
 
-::: column-margin
+<!--       hcaes(x = evicClean, -->
 
-The reason for an eviction case might be unknown if a default judgment
-was awarded to a landlord and the facts of the case were not discussed. 
-</br>
-Cases are limited to those where the defendant appeared.
+<!--             y = round(perCases*100, 2), -->
 
-:::
+<!--             color = color), -->
+
+<!--       name = 'Percent', -->
+
+<!--       type = "pie", -->
+
+<!--       dataLabels = list(enabled = FALSE), -->
+
+<!--       tooltip = list(pointFormat = "{point.name}: <b>{point.y:.2f}%</b>"), -->
+
+<!--       showInLegend=TRUE, -->
+
+<!--       colorByPoint = TRUE -->
+
+<!--       ) %>% -->
+
+<!--     hc_legend(enabled = FALSE)%>% -->
+
+<!--     hc_title(text = paste(court), -->
+
+<!--              style = list(fontSize = "15px", fontWeight = 'bold'))%>% -->
+
+<!--     hc_size(height=60, width = 200)%>% -->
+
+<!--     hc_add_theme(hc_cpal) -->
+
+<!--     chart_container <- htmltools::tagAppendChild(chart_container,  -->
+
+<!--                                                  htmltools::div(style = "width: 200px; height: 180px; margin: 5px;", hc))  -->
+
+<!--     } -->
+
+<!-- legend_container <- htmltools::div( -->
+
+<!--   style = "display: flex; flex-wrap: wrap; justify-content: center; margin-top: 10px;" -->
+
+<!-- ) -->
+
+<!-- for (reason in names(evicClean_colors)) { -->
+
+<!--   legend_container <- htmltools::tagAppendChild(legend_container,  -->
+
+<!--                                                createLegendBox(evicClean_colors[reason], reason)) -->
+
+<!-- } -->
+
+<!-- chart_container <- htmltools::tagAppendChild(chart_container, legend_container) -->
+
+<!-- chart_container -->
+
+<!-- ``` -->
+
+<!-- ## Fall '22 - Spring '23 -->
+
+<!-- ```{r} -->
+
+<!-- #| fig-height: 5 -->
+
+<!-- plotReason23 <- evicReason23 -->
+
+<!-- evicClean_colors <- c( -->
+
+<!--   "Holdover/lease expiration" = "#0047bd", -->
+
+<!--   "Multiple Reasons" = "#a80092", -->
+
+<!--   "Non-payment of rent" = "#042d33", -->
+
+<!--   "Unknown" = "#ed018c", -->
+
+<!--   "Violated lease" = "#008097" -->
+
+<!--   ) -->
+
+<!-- chart_container <- htmltools::div(style = "display: flex;  -->
+
+<!--                                   flex-wrap: wrap;  -->
+
+<!--                                   justify-content: center;  -->
+
+<!--                                   overflow-y: hidden;  -->
+
+<!--                                   gap: 5px")  -->
+
+<!-- createLegendBox <- function(color, label) { -->
+
+<!--   htmltools::div( -->
+
+<!--     style = paste0("display: flex; align-items: center; margin-right: 15px;"), -->
+
+<!--     htmltools::div(style = paste0("width: 20px; height: 20px; background-color: ", color, "; margin-right: 5px;")), -->
+
+<!--     htmltools::span(label) -->
+
+<!--   ) -->
+
+<!-- } -->
+
+<!-- for (court in unique(plotReason23$jpCourt)){ -->
+
+<!--   court_data <- plotReason23 %>% filter(jpCourt == court)%>% -->
+
+<!--     mutate(color = evicClean_colors[evicClean]) -->
+
+<!--   hc<- highchart() %>% -->
+
+<!--     hc_chart(type = "pie") %>% -->
+
+<!--     hc_add_series( -->
+
+<!--       data = court_data, -->
+
+<!--       hcaes(x = evicClean, -->
+
+<!--             y = round(perCases*100, 2), -->
+
+<!--             color = color), -->
+
+<!--       name = 'Percent', -->
+
+<!--       type = "pie", -->
+
+<!--       dataLabels = list(enabled = FALSE), -->
+
+<!--       tooltip = list(pointFormat = "{point.name}: <b>{point.y:.2f}%</b>"), -->
+
+<!--       showInLegend=TRUE, -->
+
+<!--       colorByPoint = TRUE -->
+
+<!--       ) %>% -->
+
+<!--     hc_legend(enabled = FALSE)%>% -->
+
+<!--     hc_title(text = paste(court), -->
+
+<!--              style = list(fontSize = "15px", fontWeight = 'bold'))%>% -->
+
+<!--     hc_size(height=60, width = 200)%>% -->
+
+<!--     hc_add_theme(hc_cpal) -->
+
+<!--     chart_container <- htmltools::tagAppendChild(chart_container,  -->
+
+<!--                                                  htmltools::div(style = "width: 200px; height: 180px; margin: 5px;", hc))  -->
+
+<!--     } -->
+
+<!-- legend_container <- htmltools::div( -->
+
+<!--   style = "display: flex; flex-wrap: wrap; justify-content: center; margin-top: 10px;" -->
+
+<!-- ) -->
+
+<!-- for (reason in names(evicClean_colors)) { -->
+
+<!--   legend_container <- htmltools::tagAppendChild(legend_container,  -->
+
+<!--                                                createLegendBox(evicClean_colors[reason], reason)) -->
+
+<!-- } -->
+
+<!-- chart_container <- htmltools::tagAppendChild(chart_container, legend_container) -->
+
+<!-- chart_container -->
+
+<!-- ``` -->
+
+<!-- ::: -->
+
+<br><small>Cases are limited to those where the defendant appeared.</small>
+
 
 ```{r}
 #| fig-height: 5
@@ -1617,7 +1792,6 @@ desired_order <- c(
 
 ```
 
-<br>
 
 ::: shadecontent
 {{< fa house-chimney size=lg title="Housing" >}} **Why this matters**:
@@ -1626,159 +1800,13 @@ this time, but eviction filing data illustrates the ongoing need for
 financial assistance to renters who have fallen behind on rent.
 :::
 
-<br> **Landlords or their representatives almost always appeared for the
-hearing, but tenants appeared about half of the time. However, tenant
-appearance has improved (+14% points) over previous observation
-cycles.**
 
-::: panel-tabset
-## Fall 2024
-
-```{r}
-#| fig-height: 5
-
-plot_data <- caseAppearDeac
-
-# Unique courts for x-axis
-courts <- unique(plot_data$jpCourt)
-
-# Helper to get data in the correct order for highcharter
-get_series_data <- function(df, court_order, type_filter, appear_filter) {
-  df %>%
-    filter(type == type_filter, appear == appear_filter) %>%
-    right_join(tibble(jpCourt = court_order), by = "jpCourt") %>%
-    mutate(count = ifelse(is.na(count), 0, count)) %>%
-    pull(count)
-}
-
-highchart() %>%
-  hc_chart(type = "column") %>%
-  hc_xAxis(categories = courts) %>%
-  hc_plotOptions(series = list(stacking = "percent")) %>%
-  hc_add_series(
-    name = "Yes (Tenant)",
-    data = get_series_data(plot_data, courts, "Tenant (Defendant)", "Yes"),
-    stack = "Tenant"
-  ) %>%
-  hc_add_series(
-    name = "No (Tenant)",
-    data = get_series_data(plot_data, courts, "Tenant (Defendant)", "No"),
-    stack = "Tenant"
-  ) %>%
-  hc_add_series(
-    name = "Unknown (Tenant)",
-    data = get_series_data(plot_data, courts, "Tenant (Defendant)", "Unknown"),
-    stack = "Tenant"
-  ) %>%
-  hc_add_series(
-    name = "Yes (Landlord)",
-    data = get_series_data(plot_data, courts, "Landlord (Plaintiff)", "Yes"),
-    stack = "Landlord"
-  ) %>%
-  hc_add_series(
-    name = "No (Landlord)",
-    data = get_series_data(plot_data, courts, "Landlord (Plaintiff)", "No"),
-    stack = "Landlord"
-  ) %>%
-  hc_add_series(
-    name = "Unknown (Landlord)",
-    data = get_series_data(plot_data, courts, "Landlord (Plaintiff)", "Unknown"),
-    stack = "Landlord"
-  ) %>%
-  hc_add_theme(hc_cpal) %>%
-  hc_colors(palette_cpal_main) %>%
-  hc_tooltip(
-    # shared = TRUE,
-    pointFormat = "{series.name}</span>: <b>{point.y}</b> ({point.percentage:.1f}%)<br/>",
-    headerFormat = "<b>{point.key}</b><br/>"
-  )
+<br> **Among cases where the tenant appeared for their hearing, 51% of tenants had legal representation.**
 
 
+<!-- ::: panel-tabset -->
 
-```
-
-## Summer '23 - Spring '24
-
-```{r, Representation for Cases}
-#| fig-height: 5
-
-plotAppear <- caseAppear24%>%
-  mutate(AppearPer=round(AppearPer*100, 2))
-highchart()%>%
-  hc_chart(type = 'column')%>%
-  hc_add_series(plotAppear,
-                type = 'column',
-                mapping = hcaes(
-                  x = jpCourt,
-                  y = AppearPer,
-                  group = type,
-                  color = ifelse(jpCourt == "Total", 
-                                 c('#4B1707','#ED683F')[match(type, unique(plotAppear$type))], 
-                                 palette_cpal_main[match(type, unique(plotAppear$type))])),
-                color = c('#008097', '#042d33'),
-                dataLabels = list(enabled = TRUE, format = "{point.y:.0f}%", style = list(fontWeight = "bold")))%>%
-  hc_xAxis(categories = plotAppear$jpCourt) %>%
-  hc_yAxis(labels = list(format = "{value: .0f}%"), 
-           max = 100) %>%
-  hc_plotOptions(column = list(
-    dataLabels = list(enabled = TRUE, format = "{value:.0f}%")
-  )) %>%
-  hc_tooltip(pointFormat = "{series.name} cases: {point.y:.2f}%") %>%
-  hc_add_theme(hc_cpal)
-
-```
-
-## Fall '22 - Spring '23
-
-```{r}
-#| fig-height: 5
-
-plotAppear23 <- caseAppear23%>%
-  mutate(AppearPer=round(AppearPer*100, 2))
-highchart()%>%
-  hc_chart(type = 'column')%>%
-  hc_add_series(plotAppear23,
-                type = 'column',
-                mapping = hcaes(
-                  x = jpCourt,
-                  y = AppearPer,
-                  group = type,
-                  color = ifelse(jpCourt == "Total", 
-                                 c('#4B1707','#ED683F')[match(type, unique(plotAppear23$type))], 
-                                 palette_cpal_main[match(type, unique(plotAppear23$type))])),
-                color = c('#008097', '#042d33'),
-                dataLabels = list(enabled = TRUE, format = "{point.y:.0f}%", style = list(fontWeight = "bold")))%>%
-  hc_xAxis(categories = plotAppear23$jpCourt) %>%
-  hc_yAxis(labels = list(format = "{value: .0f}%"), 
-           max = 100) %>%
-  hc_plotOptions(column = list(
-    dataLabels = list(enabled = TRUE, format = "{value:.0f}%")
-  )) %>%
-  hc_tooltip(pointFormat = "{series.name} cases: {point.y:.2f}%") %>%
-  hc_add_theme(hc_cpal)
-```
-:::
-
-<br>
-
-::: shadecontent
-{{< fa house-chimney size=lg title="Housing" >}} **Why this matters**:
-When a tenant does not appear for an eviction hearing, a default
-judgment is usually awarded to the landlord, without consideration of
-the facts of the case. Tenants may not appear in court because they must
-go to work, lack transportation, are unclear about how eviction cases
-proceed, or have already determined to move out.
-:::
-
-<br> **Legal representation of tenants has improved (+25% points) over
-previous observation cycles.**
-
-::: column-margin
-Cases are limited to those where the defendant appeared.
-:::
-
-::: panel-tabset
-## Fall 2024
+<!-- ## Fall 2024 -->
 
 ```{r}
 plotDefDeac <- defRepresentDeac%>%
@@ -1805,80 +1833,126 @@ highchart()%>%
   hc_plotOptions(column = list(borderWidth = 0)) %>%
   hc_xAxis(categories = unique(plotDefDeac$jpCourt), labels = list(enabled = TRUE)) %>%
   hc_yAxis(title = list(text = ""), labels = list(format = "{value}%"), max = 100) %>%
-  hc_tooltip(pointFormat = "{series.name} cases: {point.y:.0f}%") %>%
+  hc_tooltip(
+    useHTML = TRUE,
+    pointFormat = paste0(
+      "{series.name}: {point.y:.0f}%<br>",
+      "Number of Cases: {point.count:,.0f}"
+    )
+  ) %>%
   hc_colors(palette_cpal_main)%>%
   hc_add_theme(hc_cpal)
 
 
 ```
+<small>Cases are limited to those where the defendant appeared.</small>
+<br><small>Values may not add to 100% due to rounding.</small>
 
-## Summer '23 - Spring '24
+<!-- ## Summer '23 - Spring '24 -->
 
-```{r}
-plotDef24 <- defRepresent24%>%
-  add_row(., tibble(jpCourt = "Court 4-2", legalRep = "Attorney present for tenant (Defendant)", count = 0, perRep = 0))%>%
-  group_by(jpCourt, legalRep)%>%
-  summarise(count = count, perRep = perRep)
-  
+<!-- ```{r} -->
 
+<!-- plotDef24 <- defRepresent24%>% -->
 
-#court_order <- c("Court 1-1", "Court 1-2", "Court 2-2", "Court 3-1", "Court 4-1", "Court 5-1", "Court 4-2", "Total" )
+<!--   add_row(., tibble(jpCourt = "Court 4-2", legalRep = "Attorney present for tenant (Defendant)", count = 0, perRep = 0))%>% -->
 
-highchart()%>%
-  hc_chart(type = "column") %>%
-  hc_add_series(
-    plotDef24,
-    type = "column",
-    mapping = hcaes(
-      x = jpCourt,
-      y = round(100*perRep, 2),  
-      group = legalRep,
-      color = ifelse(jpCourt == "Total", c('#ED683F','#4B1707')[match(legalRep, unique(plotDef24$legalRep))], palette_cpal_main[match(legalRep, unique(plotDef24$legalRep))])
-      ),
-    dataLabels = list(enabled = TRUE, format = "{point.y:.0f}%", style = list(fontWeight = "bold")))%>%
-  hc_plotOptions(column = list(borderWidth = 0)) %>%
-  hc_xAxis(categories = unique(plotDef24$jpCourt), labels = list(enabled = TRUE)) %>%
-  hc_yAxis(title = list(text = ""), labels = list(format = "{value}%"), max = 100) %>%
-  hc_tooltip(pointFormat = "{series.name} cases: {point.y:.0f}%") %>%
-  hc_colors(palette_cpal_main)%>%
-  hc_add_theme(hc_cpal)
+<!--   group_by(jpCourt, legalRep)%>% -->
 
-```
+<!--   summarise(count = count, perRep = perRep) -->
 
-## Fall '22 - Spring '23
+<!-- #court_order <- c("Court 1-1", "Court 1-2", "Court 2-2", "Court 3-1", "Court 4-1", "Court 5-1", "Court 4-2", "Total" ) -->
 
-```{r}
-plotDef23 <- defRepresent23%>%
-  #add_row(., tibble(jpCourt = "Court 4-2", legalRep = "Attorney present for tenant (Defendant)", count = 0, perRep = 0))%>%
-  group_by(jpCourt, legalRep)%>%
-  summarise(count = count, perRep = perRep)
-  
+<!-- highchart()%>% -->
 
+<!--   hc_chart(type = "column") %>% -->
 
-#court_order <- c("Court 1-1", "Court 1-2", "Court 2-2", "Court 3-1", "Court 4-1", "Court 5-1", "Court 4-2", "Total" )
+<!--   hc_add_series( -->
 
-highchart()%>%
-  hc_chart(type = "column") %>%
-  hc_add_series(
-    plotDef23,
-    type = "column",
-    mapping = hcaes(
-      x = jpCourt,
-      y = round(100*perRep, 2),  
-      group = legalRep,
-      color = ifelse(jpCourt == "Total", c('#ED683F','#4B1707')[match(legalRep, unique(plotDef23$legalRep))], palette_cpal_main[match(legalRep, unique(plotDef23$legalRep))])
-      ),
-    dataLabels = list(enabled = TRUE, format = "{point.y:.0f}%", style = list(fontWeight = "bold")))%>%
-  hc_plotOptions(column = list(borderWidth = 0)) %>%
-  hc_xAxis(categories = unique(plotDef23$jpCourt), labels = list(enabled = TRUE)) %>%
-  hc_yAxis(title = list(text = ""), labels = list(format = "{value}%"), max = 100) %>%
-  hc_tooltip(pointFormat = "{series.name} cases: {point.y:.0f}%") %>%
-  hc_colors(palette_cpal_main)%>%
-  hc_add_theme(hc_cpal)
-```
-:::
+<!--     plotDef24, -->
 
-<br>
+<!--     type = "column", -->
+
+<!--     mapping = hcaes( -->
+
+<!--       x = jpCourt, -->
+
+<!--       y = round(100*perRep, 2),   -->
+
+<!--       group = legalRep, -->
+
+<!--       color = ifelse(jpCourt == "Total", c('#ED683F','#4B1707')[match(legalRep, unique(plotDef24$legalRep))], palette_cpal_main[match(legalRep, unique(plotDef24$legalRep))]) -->
+
+<!--       ), -->
+
+<!--     dataLabels = list(enabled = TRUE, format = "{point.y:.0f}%", style = list(fontWeight = "bold")))%>% -->
+
+<!--   hc_plotOptions(column = list(borderWidth = 0)) %>% -->
+
+<!--   hc_xAxis(categories = unique(plotDef24$jpCourt), labels = list(enabled = TRUE)) %>% -->
+
+<!--   hc_yAxis(title = list(text = ""), labels = list(format = "{value}%"), max = 100) %>% -->
+
+<!--   hc_tooltip(pointFormat = "{series.name} cases: {point.y:.0f}%") %>% -->
+
+<!--   hc_colors(palette_cpal_main)%>% -->
+
+<!--   hc_add_theme(hc_cpal) -->
+
+<!-- ``` -->
+
+<!-- ## Fall '22 - Spring '23 -->
+
+<!-- ```{r} -->
+
+<!-- plotDef23 <- defRepresent23%>% -->
+
+<!--   #add_row(., tibble(jpCourt = "Court 4-2", legalRep = "Attorney present for tenant (Defendant)", count = 0, perRep = 0))%>% -->
+
+<!--   group_by(jpCourt, legalRep)%>% -->
+
+<!--   summarise(count = count, perRep = perRep) -->
+
+<!-- #court_order <- c("Court 1-1", "Court 1-2", "Court 2-2", "Court 3-1", "Court 4-1", "Court 5-1", "Court 4-2", "Total" ) -->
+
+<!-- highchart()%>% -->
+
+<!--   hc_chart(type = "column") %>% -->
+
+<!--   hc_add_series( -->
+
+<!--     plotDef23, -->
+
+<!--     type = "column", -->
+
+<!--     mapping = hcaes( -->
+
+<!--       x = jpCourt, -->
+
+<!--       y = round(100*perRep, 2),   -->
+
+<!--       group = legalRep, -->
+
+<!--       color = ifelse(jpCourt == "Total", c('#ED683F','#4B1707')[match(legalRep, unique(plotDef23$legalRep))], palette_cpal_main[match(legalRep, unique(plotDef23$legalRep))]) -->
+
+<!--       ), -->
+
+<!--     dataLabels = list(enabled = TRUE, format = "{point.y:.0f}%", style = list(fontWeight = "bold")))%>% -->
+
+<!--   hc_plotOptions(column = list(borderWidth = 0)) %>% -->
+
+<!--   hc_xAxis(categories = unique(plotDef23$jpCourt), labels = list(enabled = TRUE)) %>% -->
+
+<!--   hc_yAxis(title = list(text = ""), labels = list(format = "{value}%"), max = 100) %>% -->
+
+<!--   hc_tooltip(pointFormat = "{series.name} cases: {point.y:.0f}%") %>% -->
+
+<!--   hc_colors(palette_cpal_main)%>% -->
+
+<!--   hc_add_theme(hc_cpal) -->
+
+<!-- ``` -->
+
+<!-- ::: -->
 
 ::: shadecontent
 {{< fa house-chimney size=lg title="Housing" >}} **Why this matters**:
@@ -1891,13 +1965,8 @@ judgments off their records, and navigate other housing supports, like
 rent relief.
 :::
 
-<br> **A written Notice to Vacate is the first legal step to initiate an
-eviction and was confirmed by the Justice of the Peace in 53% of
-observed hearings, up from 44% in 2022-23.**
+<br> **A written Notice to Vacate is the first legal step to initiate an eviction and was discussed by the Justice of the Peace in 24% of observed hearings.**
 
-::: column-margin
-Cases are limited to those where the defendant appeared.
-:::
 
 ```{r}
 #| fig-height: 5
@@ -1923,13 +1992,18 @@ highchart()%>%
   hc_plotOptions(column = list(borderWidth = 0)) %>%
   hc_xAxis(categories = unique(plotntvDeac$jpCourt), labels = list(enabled = TRUE)) %>%
   hc_yAxis(title = list(text = ""), labels = list(format = "{value}%"), max = 100) %>%
-  hc_tooltip(pointFormat = "Percentage of Cases with Discussed NTV: {point.y:.2f}%") %>%
+  hc_tooltip(
+    useHTML = TRUE,
+    pointFormat = paste0(
+      "Percentage of Cases With Discussed NTV: {point.y:.0f}%<br>",
+      "Number of Cases: {point.count:,.0f}"
+    )
+  ) %>%
   #hc_colors(palette_cpal_main)%>%
   hc_add_theme(hc_cpal)
 
 ```
-
-<br>
+<small>Cases are limited to those where the defendant appeared.</small>
 
 ::: shadecontent
 {{< fa house-chimney size=lg title="Housing" >}} **Why this matters**:
@@ -2055,10 +2129,11 @@ opportunity to dismiss the eviction suit.
 
 <br>
 
-## Across all observed cases, the judge ruled in favor of the landlord in 56% of cases and in favor of the tenant in 10% of cases.
+## Across all observed cases, the judge ruled in favor of the landlord in 55% of cases and in favor of the tenant in 11% of cases.
 
-::: panel-tabset
-## Fall 2024
+<!-- ::: panel-tabset -->
+
+<!-- ## Fall 2024 -->
 
 ```{r}
 #| fig-height: 4
@@ -2095,7 +2170,11 @@ for (court in court_order) {
         name = 'Percent',
         type = "pie",
         dataLabels = list(enabled = FALSE),
-        tooltip = list(pointFormat = "{point.name}: <b>{point.y:.2f}%</b>"),
+        tooltip = list(
+        pointFormat = paste0(
+          "{point.name}: <b>{point.y:.2f}%</b><br>",
+          "Number of Cases: {point.count:,.0f}"
+        )),
         showInLegend=FALSE,
         colorByPoint = TRUE
         ) %>%
@@ -2127,147 +2206,255 @@ chart_container
 
 ```
 
-## Summer '23 - Spring '24
+<!-- ## Summer '23 - Spring '24 -->
 
-```{r, eviction outcome}
-#| fig-height: 4
-court_order <- c("Court 1-1", "Court 1-2", 
-                 #"Court 2-2",
-                 "Court 3-1","Court 4-1", "Court 4-2", "Court 5-1", "Total")
-plotOutcome <- caseOutcome24
-outcomeParty_colors <- c(
-  "Abated" = "#0047bd",  
-  "Dismissed" = "#a80092", 
-  "Ruled in Favor of Landlord" = "#042d33",   
-  "Other" = "#ed018c", 
-  "Ruled in Favor of Tenant" = "#008097",
-  'Unknown'='#ed683f'
-)
-chart_container <- htmltools::div(style = "display: flex; flex-wrap: wrap; justify-content: center; overflow-y: hidden; gap: 5px") 
+<!-- ```{r, eviction outcome} -->
 
-createLegendBox <- function(color, label) {
-  htmltools::div(
-    style = paste0("display: flex; align-items: center; margin-right: 15px;"),
-    htmltools::div(style = paste0("width: 20px; height: 20px; background-color: ", color, "; margin-right: 5px;")),
-    htmltools::span(label)
-  )
-}
-for (court in court_order) {
-  court_data <- plotOutcome %>% filter(jpCourt == court)%>% 
-    mutate(color = outcomeParty_colors[outcomeParty])
-    
-    hc<- highchart() %>%
-      hc_chart(type = "pie") %>% 
-      hc_add_series(
-        data = court_data,
-        hcaes(x = outcomeParty, 
-              y = round(perOutcome*100, 2),
-              color = color), 
-        name = 'Percent',
-        type = "pie",
-        dataLabels = list(enabled = FALSE),
-        tooltip = list(pointFormat = "{point.name}: <b>{point.y:.2f}%</b>"),
-        showInLegend=FALSE,
-        colorByPoint = TRUE
-        ) %>%
-      hc_legend(visible = FALSE)%>%
-      hc_title(text = paste(court),
-             style = list(fontSize = "15px", fontWeight = 'bold'))%>%
-    hc_add_theme(hc_cpal)%>%
-    hc_size(height=60, width = 200)
+<!-- #| fig-height: 4 -->
 
-    chart_container <- htmltools::tagAppendChild(chart_container, 
-                                                 htmltools::div(style = "width: 200px; height: 180px; margin: 5px;", hc)) 
-    }
-# 
-legend_container <- htmltools::div(
-  style = "display: flex; flex-wrap: wrap; justify-content: center; margin-top: 10px;"
-)
+<!-- court_order <- c("Court 1-1", "Court 1-2",  -->
 
-# Add Legend Boxes to Legend Container
-for (reason in names(outcomeParty_colors)) {
-  legend_container <- htmltools::tagAppendChild(legend_container,
-                                               createLegendBox(outcomeParty_colors[reason], reason))
-}
+<!--                  #"Court 2-2", -->
 
-# Append Legend Container to Main Container
-chart_container <- htmltools::tagAppendChild(chart_container, legend_container)
+<!--                  "Court 3-1","Court 4-1", "Court 4-2", "Court 5-1", "Total") -->
 
-# Display the Final Chart Container
-chart_container
+<!-- plotOutcome <- caseOutcome24 -->
 
-```
+<!-- outcomeParty_colors <- c( -->
 
-## Fall '22 - Spring '23
+<!--   "Abated" = "#0047bd",   -->
 
-```{r}
-#| fig-height: 5
-court_order <- c("Court 1-1", "Court 1-2", 
-                 #"Court 2-2",
-                 "Court 3-1","Court 4-1", "Court 5-1", "Total")
-plotOutcome23 <- caseOutcome23 
-outcomeParty_colors <- c(
-  "Abated" = "#0047bd",  
-  "Dismissed" = "#a80092", 
-  "Ruled in Favor of Landlord" = "#042d33",   
-  "Other" = "#ed018c", 
-  "Ruled in Favor of Tenant" = "#008097",
-  'Unknown'='#ed683f'
-)
-chart_container <- htmltools::div(style = "display: flex; flex-wrap: wrap; justify-content: center; overflow-y: hidden; gap: 5px") 
+<!--   "Dismissed" = "#a80092",  -->
 
-createLegendBox <- function(color, label) {
-  htmltools::div(
-    style = paste0("display: flex; align-items: center; margin-right: 15px;"),
-    htmltools::div(style = paste0("width: 20px; height: 20px; background-color: ", color, "; margin-right: 5px;")),
-    htmltools::span(label)
-  )
-}
-for (court in court_order) {
-  court_data <- plotOutcome23 %>% filter(jpCourt == court)%>% 
-    mutate(color = outcomeParty_colors[outcomeParty])
-    
-    hc<- highchart() %>%
-      hc_chart(type = "pie") %>% 
-      hc_add_series(
-        data = court_data,
-        hcaes(x = outcomeParty, 
-              y = round(perOutcome*100, 2),
-              color = color), 
-        name = 'Percent',
-        type = "pie",
-        dataLabels = list(enabled = FALSE),
-        tooltip = list(pointFormat = "{point.name}: <b>{point.y:.2f}%</b>"),
-        showInLegend=FALSE,
-        colorByPoint = TRUE
-        ) %>%
-      hc_legend(visible = FALSE)%>%
-      hc_title(text = paste(court),
-             style = list(fontSize = "15px", fontWeight = 'bold'))%>%
-    hc_add_theme(hc_cpal)%>%
-    hc_size(height=60, width = 200)
+<!--   "Ruled in Favor of Landlord" = "#042d33",    -->
 
-    chart_container <- htmltools::tagAppendChild(chart_container, 
-                                                 htmltools::div(style = "width: 200px; height: 180px; margin: 5px;", hc)) 
-    }
-# 
-legend_container <- htmltools::div(
-  style = "display: flex; flex-wrap: wrap; justify-content: center; margin-top: 10px;"
-)
+<!--   "Other" = "#ed018c",  -->
 
-# Add Legend Boxes to Legend Container
-for (reason in names(outcomeParty_colors)) {
-  legend_container <- htmltools::tagAppendChild(legend_container,
-                                               createLegendBox(outcomeParty_colors[reason], reason))
-}
+<!--   "Ruled in Favor of Tenant" = "#008097", -->
 
-# Append Legend Container to Main Container
-chart_container <- htmltools::tagAppendChild(chart_container, legend_container)
+<!--   'Unknown'='#ed683f' -->
 
-# Display the Final Chart Container
-chart_container
-```
-:::
+<!-- ) -->
+
+<!-- chart_container <- htmltools::div(style = "display: flex; flex-wrap: wrap; justify-content: center; overflow-y: hidden; gap: 5px")  -->
+
+<!-- createLegendBox <- function(color, label) { -->
+
+<!--   htmltools::div( -->
+
+<!--     style = paste0("display: flex; align-items: center; margin-right: 15px;"), -->
+
+<!--     htmltools::div(style = paste0("width: 20px; height: 20px; background-color: ", color, "; margin-right: 5px;")), -->
+
+<!--     htmltools::span(label) -->
+
+<!--   ) -->
+
+<!-- } -->
+
+<!-- for (court in court_order) { -->
+
+<!--   court_data <- plotOutcome %>% filter(jpCourt == court)%>%  -->
+
+<!--     mutate(color = outcomeParty_colors[outcomeParty]) -->
+
+<!--     hc<- highchart() %>% -->
+
+<!--       hc_chart(type = "pie") %>%  -->
+
+<!--       hc_add_series( -->
+
+<!--         data = court_data, -->
+
+<!--         hcaes(x = outcomeParty,  -->
+
+<!--               y = round(perOutcome*100, 2), -->
+
+<!--               color = color),  -->
+
+<!--         name = 'Percent', -->
+
+<!--         type = "pie", -->
+
+<!--         dataLabels = list(enabled = FALSE), -->
+
+<!--         tooltip = list(pointFormat = "{point.name}: <b>{point.y:.2f}%</b>"), -->
+
+<!--         showInLegend=FALSE, -->
+
+<!--         colorByPoint = TRUE -->
+
+<!--         ) %>% -->
+
+<!--       hc_legend(visible = FALSE)%>% -->
+
+<!--       hc_title(text = paste(court), -->
+
+<!--              style = list(fontSize = "15px", fontWeight = 'bold'))%>% -->
+
+<!--     hc_add_theme(hc_cpal)%>% -->
+
+<!--     hc_size(height=60, width = 200) -->
+
+<!--     chart_container <- htmltools::tagAppendChild(chart_container,  -->
+
+<!--                                                  htmltools::div(style = "width: 200px; height: 180px; margin: 5px;", hc))  -->
+
+<!--     } -->
+
+<!-- #  -->
+
+<!-- legend_container <- htmltools::div( -->
+
+<!--   style = "display: flex; flex-wrap: wrap; justify-content: center; margin-top: 10px;" -->
+
+<!-- ) -->
+
+<!-- # Add Legend Boxes to Legend Container -->
+
+<!-- for (reason in names(outcomeParty_colors)) { -->
+
+<!--   legend_container <- htmltools::tagAppendChild(legend_container, -->
+
+<!--                                                createLegendBox(outcomeParty_colors[reason], reason)) -->
+
+<!-- } -->
+
+<!-- # Append Legend Container to Main Container -->
+
+<!-- chart_container <- htmltools::tagAppendChild(chart_container, legend_container) -->
+
+<!-- # Display the Final Chart Container -->
+
+<!-- chart_container -->
+
+<!-- ``` -->
+
+<!-- ## Fall '22 - Spring '23 -->
+
+<!-- ```{r} -->
+
+<!-- #| fig-height: 5 -->
+
+<!-- court_order <- c("Court 1-1", "Court 1-2",  -->
+
+<!--                  #"Court 2-2", -->
+
+<!--                  "Court 3-1","Court 4-1", "Court 5-1", "Total") -->
+
+<!-- plotOutcome23 <- caseOutcome23  -->
+
+<!-- outcomeParty_colors <- c( -->
+
+<!--   "Abated" = "#0047bd",   -->
+
+<!--   "Dismissed" = "#a80092",  -->
+
+<!--   "Ruled in Favor of Landlord" = "#042d33",    -->
+
+<!--   "Other" = "#ed018c",  -->
+
+<!--   "Ruled in Favor of Tenant" = "#008097", -->
+
+<!--   'Unknown'='#ed683f' -->
+
+<!-- ) -->
+
+<!-- chart_container <- htmltools::div(style = "display: flex; flex-wrap: wrap; justify-content: center; overflow-y: hidden; gap: 5px")  -->
+
+<!-- createLegendBox <- function(color, label) { -->
+
+<!--   htmltools::div( -->
+
+<!--     style = paste0("display: flex; align-items: center; margin-right: 15px;"), -->
+
+<!--     htmltools::div(style = paste0("width: 20px; height: 20px; background-color: ", color, "; margin-right: 5px;")), -->
+
+<!--     htmltools::span(label) -->
+
+<!--   ) -->
+
+<!-- } -->
+
+<!-- for (court in court_order) { -->
+
+<!--   court_data <- plotOutcome23 %>% filter(jpCourt == court)%>%  -->
+
+<!--     mutate(color = outcomeParty_colors[outcomeParty]) -->
+
+<!--     hc<- highchart() %>% -->
+
+<!--       hc_chart(type = "pie") %>%  -->
+
+<!--       hc_add_series( -->
+
+<!--         data = court_data, -->
+
+<!--         hcaes(x = outcomeParty,  -->
+
+<!--               y = round(perOutcome*100, 2), -->
+
+<!--               color = color),  -->
+
+<!--         name = 'Percent', -->
+
+<!--         type = "pie", -->
+
+<!--         dataLabels = list(enabled = FALSE), -->
+
+<!--         tooltip = list(pointFormat = "{point.name}: <b>{point.y:.2f}%</b>"), -->
+
+<!--         showInLegend=FALSE, -->
+
+<!--         colorByPoint = TRUE -->
+
+<!--         ) %>% -->
+
+<!--       hc_legend(visible = FALSE)%>% -->
+
+<!--       hc_title(text = paste(court), -->
+
+<!--              style = list(fontSize = "15px", fontWeight = 'bold'))%>% -->
+
+<!--     hc_add_theme(hc_cpal)%>% -->
+
+<!--     hc_size(height=60, width = 200) -->
+
+<!--     chart_container <- htmltools::tagAppendChild(chart_container,  -->
+
+<!--                                                  htmltools::div(style = "width: 200px; height: 180px; margin: 5px;", hc))  -->
+
+<!--     } -->
+
+<!-- #  -->
+
+<!-- legend_container <- htmltools::div( -->
+
+<!--   style = "display: flex; flex-wrap: wrap; justify-content: center; margin-top: 10px;" -->
+
+<!-- ) -->
+
+<!-- # Add Legend Boxes to Legend Container -->
+
+<!-- for (reason in names(outcomeParty_colors)) { -->
+
+<!--   legend_container <- htmltools::tagAppendChild(legend_container, -->
+
+<!--                                                createLegendBox(outcomeParty_colors[reason], reason)) -->
+
+<!-- } -->
+
+<!-- # Append Legend Container to Main Container -->
+
+<!-- chart_container <- htmltools::tagAppendChild(chart_container, legend_container) -->
+
+<!-- # Display the Final Chart Container -->
+
+<!-- chart_container -->
+
+<!-- ``` -->
+
+<!-- ::: -->
 
 <br>
 
@@ -2282,19 +2469,16 @@ finding a new place to live. Rent or court fees may also go to
 collections, negatively impacting a renter’s credit score.
 :::
 
-<br>
-
-## However, appearing in court and having legal representation matters for outcomes. When tenants did not appear for their hearings, cases were decided in favor of the landlord 79% of the time; when tenants did appear, cases were decided in favor of the landlord 53% of the time.
+## However, appearing in court and having legal representation matters for outcomes. When tenants did not appear for their hearings, cases were decided in favor of the landlord 79% of the time; when tenants did appear, cases were decided in favor of the landlord 52% of the time.
 
 **Case outcomes when tenant/defendant appeared versus when
 tenant/defendant did not appear (across all observations):**
 
-::: column-margin
-Cases marked as "Unknown" for tenant appearance are excluded from this chart.
-:::
 
-::: panel-tabset
-## Fall 2024
+
+<!-- ::: panel-tabset -->
+
+<!-- ## Fall 2024 -->
 
 ```{r}
 #| fig-height: 4
@@ -2311,7 +2495,7 @@ highchart() %>%
                 hcaes(x = defAppear, 
                       y = round(100*perOutcome,2), 
                       group = outcomeParty),
-                tooltip = list(pointFormat = "{series.name}: <b>{point.y:.2f}%</b><br>Count: <b>{point.count}</b>")) %>%
+                tooltip = list(pointFormat = "{series.name}: <b>{point.y:.2f}%</b><br>Number of Cases: <b>{point.count}</b>")) %>%
   hc_chart(type = "bar") %>%
   hc_plotOptions(bar = list(stacking = "normal"))%>%
   hc_colors(palette_cpal_main)%>%
@@ -2319,54 +2503,89 @@ highchart() %>%
 
 
 ```
+<small>Cases marked as "Unknown" for tenant appearance are excluded from this
+chart.</small>
+<!-- ## Summer '23 - Spring '24 -->
 
-## Summer '23 - Spring '24
+<!-- ```{r, outcomes with appearance} -->
 
-```{r, outcomes with appearance}
-#| fig-height: 4
+<!-- #| fig-height: 4 -->
 
-plotOutAp <- outcomeApp24 %>%
-  mutate(outcomeParty = factor(outcomeParty, levels = c("Ruled in Favor of Landlord", "Ruled in Favor of Tenant", "Abated", "Dismissed", "Other", "Unknown")),
-         defAppear = ifelse(defAppear == "Yes", "Tenant appeared", "Tenant did not appear"))# %>%
-highchart() %>%
-  hc_xAxis(categories = unique(plotOutAp$defAppear)) %>%
-  hc_yAxis(visible=FALSE) %>%
-  hc_add_series(data = plotOutAp, 
-                type = "bar", 
-                hcaes(x = defAppear, 
-                      y = round(100*perOutcome,2), 
-                      group = outcomeParty),
-                tooltip = list(pointFormat = "{series.name}: <b>{point.y:.2f}%</b>")) %>%
-  hc_chart(type = "bar") %>%
-  hc_plotOptions(bar = list(stacking = "normal"))%>%
-  hc_colors(palette_cpal_main)%>%
-    hc_add_theme(hc_cpal)
+<!-- plotOutAp <- outcomeApp24 %>% -->
 
-```
+<!--   mutate(outcomeParty = factor(outcomeParty, levels = c("Ruled in Favor of Landlord", "Ruled in Favor of Tenant", "Abated", "Dismissed", "Other", "Unknown")), -->
 
-## Fall '22 - Spring '23
+<!--          defAppear = ifelse(defAppear == "Yes", "Tenant appeared", "Tenant did not appear"))# %>% -->
 
-```{r}
-#| fig-height: 4
-plotOutAp <- outcomeApp23 %>%
-  mutate(outcomeParty = factor(outcomeParty, levels = c("Ruled in Favor of Landlord", "Ruled in Favor of Tenant", "Abated", "Dismissed", "Other", "Unknown")),
-         defAppear = ifelse(defAppear == "Yes", "Tenant appeared", "Tenant did not appear"))# %>%
-highchart() %>%
-  hc_xAxis(categories = unique(plotOutAp$defAppear)) %>%
-  hc_yAxis(visible=FALSE) %>%
-  hc_add_series(data = plotOutAp, 
-                type = "bar", 
-                hcaes(x = defAppear, 
-                      y = round(100*perOutcome,2), 
-                      group = outcomeParty),
-                tooltip = list(pointFormat = "{series.name}: <b>{point.y:.2f}%</b>")) %>%
-  hc_chart(type = "bar") %>%
-  hc_plotOptions(bar = list(stacking = "normal"))%>%
-  hc_colors(palette_cpal_main)%>%
-    hc_add_theme(hc_cpal)
+<!-- highchart() %>% -->
 
-```
-:::
+<!--   hc_xAxis(categories = unique(plotOutAp$defAppear)) %>% -->
+
+<!--   hc_yAxis(visible=FALSE) %>% -->
+
+<!--   hc_add_series(data = plotOutAp,  -->
+
+<!--                 type = "bar",  -->
+
+<!--                 hcaes(x = defAppear,  -->
+
+<!--                       y = round(100*perOutcome,2),  -->
+
+<!--                       group = outcomeParty), -->
+
+<!--                 tooltip = list(pointFormat = "{series.name}: <b>{point.y:.2f}%</b>")) %>% -->
+
+<!--   hc_chart(type = "bar") %>% -->
+
+<!--   hc_plotOptions(bar = list(stacking = "normal"))%>% -->
+
+<!--   hc_colors(palette_cpal_main)%>% -->
+
+<!--     hc_add_theme(hc_cpal) -->
+
+<!-- ``` -->
+
+<!-- ## Fall '22 - Spring '23 -->
+
+<!-- ```{r} -->
+
+<!-- #| fig-height: 4 -->
+
+<!-- plotOutAp <- outcomeApp23 %>% -->
+
+<!--   mutate(outcomeParty = factor(outcomeParty, levels = c("Ruled in Favor of Landlord", "Ruled in Favor of Tenant", "Abated", "Dismissed", "Other", "Unknown")), -->
+
+<!--          defAppear = ifelse(defAppear == "Yes", "Tenant appeared", "Tenant did not appear"))# %>% -->
+
+<!-- highchart() %>% -->
+
+<!--   hc_xAxis(categories = unique(plotOutAp$defAppear)) %>% -->
+
+<!--   hc_yAxis(visible=FALSE) %>% -->
+
+<!--   hc_add_series(data = plotOutAp,  -->
+
+<!--                 type = "bar",  -->
+
+<!--                 hcaes(x = defAppear,  -->
+
+<!--                       y = round(100*perOutcome,2),  -->
+
+<!--                       group = outcomeParty), -->
+
+<!--                 tooltip = list(pointFormat = "{series.name}: <b>{point.y:.2f}%</b>")) %>% -->
+
+<!--   hc_chart(type = "bar") %>% -->
+
+<!--   hc_plotOptions(bar = list(stacking = "normal"))%>% -->
+
+<!--   hc_colors(palette_cpal_main)%>% -->
+
+<!--     hc_add_theme(hc_cpal) -->
+
+<!-- ``` -->
+
+<!-- ::: -->
 
 ## When tenants had legal representation, cases were decided in favor of the landlord 26% of the time.
 
@@ -2374,8 +2593,9 @@ highchart() %>%
 when tenant/defendant did not have legal representation (across all
 observations).**
 
-::: panel-tabset
-## Fall 2024
+<!-- ::: panel-tabset -->
+
+<!-- ## Fall 2024 -->
 
 ```{r}
 #| fig-height: 4
@@ -2394,7 +2614,7 @@ highchart() %>%
                 hcaes(x = defRep, 
                       y = round(100*perOutcome,2), 
                       group = outcomeParty),
-                tooltip = list(pointFormat = "{series.name}: <b>{point.y:.2f}%</b>")) %>%
+                tooltip = list(pointFormat = "{series.name}: <b>{point.y:.2f}%</b><br>Number of Cases: <b>{point.count}</b>")) %>%
   hc_chart(type = "bar") %>%
   hc_plotOptions(bar = list(stacking = "normal"))%>%
   hc_colors(palette_cpal_main)%>%
@@ -2402,85 +2622,129 @@ highchart() %>%
 
 ```
 
-## Summer '23 - Spring '24
+<!-- ## Summer '23 - Spring '24 -->
 
-```{r, outcomes with representation}
-#| fig-height: 4
+<!-- ```{r, outcomes with representation} -->
 
-plotRep <- outcomeRep24 %>%
-    mutate(outcomeParty = factor(outcomeParty, levels = c("Ruled in Favor of Landlord", "Ruled in Favor of Tenant", "Abated", "Dismissed", "Other", "Unknown"))) %>%
-  mutate(defRep = ifelse(str_detect(defRep, "Yes"), "With Legal Representation", "Without Legal Representation")) #%>%
+<!-- #| fig-height: 4 -->
 
-highchart() %>%
-  hc_xAxis(categories = unique(plotRep$defRep)) %>%
-  hc_yAxis(visible=FALSE) %>%
-  hc_add_series(data = plotRep, 
-                type = "bar", 
-                hcaes(x = defRep, 
-                      y = round(100*perOutcome,2), 
-                      group = outcomeParty),
-                tooltip = list(pointFormat = "{series.name}: <b>{point.y:.2f}%</b>")) %>%
-  hc_chart(type = "bar") %>%
-  hc_plotOptions(bar = list(stacking = "normal"))%>%
-  hc_colors(palette_cpal_main)%>%
-    hc_add_theme(hc_cpal)
+<!-- plotRep <- outcomeRep24 %>% -->
 
+<!--     mutate(outcomeParty = factor(outcomeParty, levels = c("Ruled in Favor of Landlord", "Ruled in Favor of Tenant", "Abated", "Dismissed", "Other", "Unknown"))) %>% -->
 
-# evicReasonTime <- courtobs %>%
-#   filter(!is.na(jpCourt)) %>%
-#   mutate(evicClean = ifelse(str_detect(evicReason, ","), "Multiple Reasons", evicReason),
-#          observationMonth = ymd(observationDate), "%B %Y") %>%
-#   group_by(jpCourt, evicClean, observationMonth) %>%
-#   summarize(count = n()) %>%
-#   mutate(perCases = count/sum(count)) %>%
-#   ungroup(.) %>%
-#   arrange(observationMonth) %>%  # Sort chronologically
-  #mutate(observationMonth = format(observationMonth, "%B %Y"))
-  #rbind(., totReason)
+<!--   mutate(defRep = ifelse(str_detect(defRep, "Yes"), "With Legal Representation", "Without Legal Representation")) #%>% -->
 
-# highchart()%>%
-#   hc_add_series(data = evicReasonTime, 
-#                 type = 'line', 
-#                 hcaes(x = observationMonth, 
-#                       y = count, 
-#                       group = evicClean))%>%
-#   hc_xAxis(type = 'category',
-#            categories = unique(evicReasonTime$observationMonth)) %>% 
-#   hc_colors(palette_cpal_main)#%>%
-#   #hc_title(text='Payors for Clinic Visits Over Time')
+<!-- highchart() %>% -->
 
+<!--   hc_xAxis(categories = unique(plotRep$defRep)) %>% -->
 
+<!--   hc_yAxis(visible=FALSE) %>% -->
 
+<!--   hc_add_series(data = plotRep,  -->
 
+<!--                 type = "bar",  -->
 
+<!--                 hcaes(x = defRep,  -->
 
+<!--                       y = round(100*perOutcome,2),  -->
 
-  
-```
+<!--                       group = outcomeParty), -->
 
-## Fall '22 - Spring '23
+<!--                 tooltip = list(pointFormat = "{series.name}: <b>{point.y:.2f}%</b>")) %>% -->
 
-```{r}
-#| fig-height: 4
-plotRep23 <- outcomeRep23 %>%
-    mutate(outcomeParty = factor(outcomeParty, levels = c("Ruled in Favor of Landlord", "Ruled in Favor of Tenant", "Abated", "Dismissed", "Other", "Unknown"))) %>%
-  mutate(defRep = ifelse(str_detect(defRep, "Yes"), "With Legal Representation", "Without Legal Representation")) #%>%
+<!--   hc_chart(type = "bar") %>% -->
 
-highchart() %>%
-  hc_xAxis(categories = unique(plotRep23$defRep)) %>%
-  hc_yAxis(visible=FALSE) %>%
-  hc_add_series(data = plotRep23, 
-                type = "bar", 
-                hcaes(x = defRep, 
-                      y = round(100*perOutcome,2), 
-                      group = outcomeParty),
-                tooltip = list(pointFormat = "{series.name}: <b>{point.y:.2f}%</b>")) %>%
-  hc_chart(type = "bar") %>%
-  hc_plotOptions(bar = list(stacking = "normal"))%>%
-  hc_colors(palette_cpal_main)%>%
-    hc_add_theme(hc_cpal)
-```
-:::
+<!--   hc_plotOptions(bar = list(stacking = "normal"))%>% -->
+
+<!--   hc_colors(palette_cpal_main)%>% -->
+
+<!--     hc_add_theme(hc_cpal) -->
+
+<!-- # evicReasonTime <- courtobs %>% -->
+
+<!-- #   filter(!is.na(jpCourt)) %>% -->
+
+<!-- #   mutate(evicClean = ifelse(str_detect(evicReason, ","), "Multiple Reasons", evicReason), -->
+
+<!-- #          observationMonth = ymd(observationDate), "%B %Y") %>% -->
+
+<!-- #   group_by(jpCourt, evicClean, observationMonth) %>% -->
+
+<!-- #   summarize(count = n()) %>% -->
+
+<!-- #   mutate(perCases = count/sum(count)) %>% -->
+
+<!-- #   ungroup(.) %>% -->
+
+<!-- #   arrange(observationMonth) %>%  # Sort chronologically -->
+
+<!--   #mutate(observationMonth = format(observationMonth, "%B %Y")) -->
+
+<!--   #rbind(., totReason) -->
+
+<!-- # highchart()%>% -->
+
+<!-- #   hc_add_series(data = evicReasonTime,  -->
+
+<!-- #                 type = 'line',  -->
+
+<!-- #                 hcaes(x = observationMonth,  -->
+
+<!-- #                       y = count,  -->
+
+<!-- #                       group = evicClean))%>% -->
+
+<!-- #   hc_xAxis(type = 'category', -->
+
+<!-- #            categories = unique(evicReasonTime$observationMonth)) %>%  -->
+
+<!-- #   hc_colors(palette_cpal_main)#%>% -->
+
+<!-- #   #hc_title(text='Payors for Clinic Visits Over Time') -->
+
+<!-- ``` -->
+
+<!-- ## Fall '22 - Spring '23 -->
+
+<!-- ```{r} -->
+
+<!-- #| fig-height: 4 -->
+
+<!-- plotRep23 <- outcomeRep23 %>% -->
+
+<!--     mutate(outcomeParty = factor(outcomeParty, levels = c("Ruled in Favor of Landlord", "Ruled in Favor of Tenant", "Abated", "Dismissed", "Other", "Unknown"))) %>% -->
+
+<!--   mutate(defRep = ifelse(str_detect(defRep, "Yes"), "With Legal Representation", "Without Legal Representation")) #%>% -->
+
+<!-- highchart() %>% -->
+
+<!--   hc_xAxis(categories = unique(plotRep23$defRep)) %>% -->
+
+<!--   hc_yAxis(visible=FALSE) %>% -->
+
+<!--   hc_add_series(data = plotRep23,  -->
+
+<!--                 type = "bar",  -->
+
+<!--                 hcaes(x = defRep,  -->
+
+<!--                       y = round(100*perOutcome,2),  -->
+
+<!--                       group = outcomeParty), -->
+
+<!--                 tooltip = list(pointFormat = "{series.name}: <b>{point.y:.2f}%</b>")) %>% -->
+
+<!--   hc_chart(type = "bar") %>% -->
+
+<!--   hc_plotOptions(bar = list(stacking = "normal"))%>% -->
+
+<!--   hc_colors(palette_cpal_main)%>% -->
+
+<!--     hc_add_theme(hc_cpal) -->
+
+<!-- ``` -->
+
+<!-- ::: -->
 
 # About CPAL
 
