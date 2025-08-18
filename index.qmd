@@ -2621,7 +2621,7 @@ highchart() %>%
     hc_add_theme(hc_cpal)
 
 ```
-
+<small>Cases are limited to those where defendant representation was captured by our observers</small>
 <!-- ## Summer '23 - Spring '24 -->
 
 <!-- ```{r, outcomes with representation} -->
