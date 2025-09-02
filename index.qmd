@@ -1065,7 +1065,7 @@ highchart()%>%
   hc_xAxis(type = 'category',
            categories = unique(evicMonthsTime$dateMonth))%>%
   hc_add_theme(hc_cpal)%>%
-  hc_colors(palette_cpal_main)%>%
+  hc_colors(cpal_palettes_categorical$main)%>%
   hc_title(text = list('Monthly Eviction Totals by Year in Dallas County'))
 ```
 
@@ -1217,9 +1217,9 @@ highchart()%>%
                   y = round(perCases, 2),
                   group = type,
                   color = ifelse(jpCourt == "Total", 
-                                 c('#4B1707','#ED683F')[match(type, unique(plotDeacCases$type))], 
-                                 palette_cpal_main[match(type, unique(plotDeacCases$type))])),
-                color = c('#008097', '#042d33'),
+                                 c('#C3257B','#ED683F')[match(type, unique(plotDeacCases$type))], 
+                                 cpal_palettes_categorical$main[match(type, unique(plotDeacCases$type))])),
+                color = c('#008097', '#004855'),
                 dataLabels = list(enabled = TRUE, format = "{point.y:.0f}%", style = list(fontWeight = "bold")))%>%
   hc_xAxis(categories = unique(plotDeacCases$jpCourt)) %>%
   hc_yAxis(labels = list(format = "{value: .0f}%"), 
@@ -1245,13 +1245,14 @@ jpCasesDeac %>%
             'Share of Total Observed Cases (%)' = scales::percent(perObsCases, accuracy = 0.1),
             'Scheduled Hearings*' = scales::number(totEvic, big.mark = ","),
             'Observed Cases by Court (%)' = scales::percent(perAllCases, accuracy = 0.1)) %>%
-    datatable(options = list(paging = FALSE,
-                           searching = FALSE,
-                           info = FALSE
-                           ),
-            rownames = FALSE) %>%
-  formatStyle(columns = colnames(.), fontWeight = 'bold', `text-align` = 'left') %>%
-  formatStyle(columns = colnames(.), fontFamily = "Poppins")
+    cpal_table_gt(#options = list(paging = FALSE,
+                           # searching = FALSE,
+                           # info = FALSE
+                           # ),
+            # rownames = FALSE
+      ) #%>%
+  # formatStyle(columns = colnames(.), fontWeight = 'bold', `text-align` = 'left') %>%
+  # formatStyle(columns = colnames(.), fontFamily = "Poppins")
 
 
 ```
@@ -1482,10 +1483,10 @@ plotReasonDeac <- evicReasonDeac
 
 
 evicClean_colors <- c(
-  "Holdover/lease expiration" = "#0047bd",
-  "Multiple Reasons" = "#a80092",
-  "Non-payment of rent" = "#042d33",
-  "Unknown" = "#ed018c",
+  "Holdover/lease expiration" = "#AB8C01",
+  "Multiple Reasons" = "#C3257B",
+  "Non-payment of rent" = "#004855",
+  "Unknown" = "#ED683F",
   "Violated lease" = "#008097"#,
   # "NA" = "#eaca2d"
   )
@@ -1827,7 +1828,7 @@ highchart()%>%
       x = jpCourt,
       y = round(100*perRep, 2),  
       group = legalRep,
-      color = ifelse(jpCourt == "Total", c('#ED683F','#4B1707', '#F1896A')[match(legalRep, unique(plotDefDeac$legalRep))], palette_cpal_main[match(legalRep, unique(plotDefDeac$legalRep))])
+      color = ifelse(jpCourt == "Total", c('#ED683F','#C3257B', '#F1896A')[match(legalRep, unique(plotDefDeac$legalRep))], cpal_palettes_categorical$main[match(legalRep, unique(plotDefDeac$legalRep))])
       ),
     dataLabels = list(enabled = TRUE, format = "{point.y:.0f}%", style = list(fontWeight = "bold")))%>%
   hc_plotOptions(column = list(borderWidth = 0)) %>%
@@ -1840,7 +1841,7 @@ highchart()%>%
       "Number of Cases: {point.count:,.0f}"
     )
   ) %>%
-  hc_colors(palette_cpal_main)%>%
+  hc_colors(cpal_palettes_categorical$main)%>%
   hc_add_theme(hc_cpal)
 
 
@@ -2140,10 +2141,10 @@ opportunity to dismiss the eviction suit.
 court_order <- c("Court 1-1", "Court 1-2", "Court 2-1", "Court 2-2","Court 3-1", "Court 3-2", "Court 5-1","Total")
 plotOutcomeDeac <- caseOutcomeDeac
 outcomeParty_colors <- c(
-  "Abated" = "#0047bd",  
-  "Dismissed" = "#a80092", 
-  "Ruled in Favor of Landlord" = "#042d33",   
-  "Other" = "#ed018c", 
+  "Abated" = "#AB8C01",  
+  "Dismissed" = "#C3257B", 
+  "Ruled in Favor of Landlord" = "#004855",   
+  "Other" = "#798AA1",
   "Ruled in Favor of Tenant" = "#008097",
   'Unknown'='#ed683f'
 )
@@ -2471,8 +2472,6 @@ collections, negatively impacting a renter’s credit score.
 
 ## However, appearing in court and having legal representation matters for outcomes. When tenants did not appear for their hearings, cases were decided in favor of the landlord 79% of the time; when tenants did appear, cases were decided in favor of the landlord 52% of the time.
 
-**Case outcomes when tenant/defendant appeared versus when
-tenant/defendant did not appear (across all observations):**
 
 
 
@@ -2498,7 +2497,7 @@ highchart() %>%
                 tooltip = list(pointFormat = "{series.name}: <b>{point.y:.2f}%</b><br>Number of Cases: <b>{point.count}</b>")) %>%
   hc_chart(type = "bar") %>%
   hc_plotOptions(bar = list(stacking = "normal"))%>%
-  hc_colors(palette_cpal_main)%>%
+  hc_colors(cpal_palettes_categorical$main)%>%
   hc_add_theme(hc_cpal)
 
 
@@ -2589,9 +2588,7 @@ chart.</small>
 
 ## When tenants had legal representation, cases were decided in favor of the landlord 26% of the time.
 
-**Case outcomes when tenant/defendant had legal representation versus
-when tenant/defendant did not have legal representation (across all
-observations).**
+
 
 <!-- ::: panel-tabset -->
 
@@ -2617,7 +2614,7 @@ highchart() %>%
                 tooltip = list(pointFormat = "{series.name}: <b>{point.y:.2f}%</b><br>Number of Cases: <b>{point.count}</b>")) %>%
   hc_chart(type = "bar") %>%
   hc_plotOptions(bar = list(stacking = "normal"))%>%
-  hc_colors(palette_cpal_main)%>%
+  hc_colors(cpal_palettes_categorical$main)%>%
     hc_add_theme(hc_cpal)
 
 ```
