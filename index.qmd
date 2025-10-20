@@ -2497,7 +2497,7 @@ highchart() %>%
                 tooltip = list(pointFormat = "{series.name}: <b>{point.y:.2f}%</b><br>Number of Cases: <b>{point.count}</b>")) %>%
   hc_chart(type = "bar") %>%
   hc_plotOptions(bar = list(stacking = "normal"))%>%
-  hc_colors(cpal_palettes_categorical$main)%>%
+hc_colors(c(cpal_palettes_categorical$main, "#0047bd"))  %>%
   hc_add_theme(hc_cpal)
 
 
