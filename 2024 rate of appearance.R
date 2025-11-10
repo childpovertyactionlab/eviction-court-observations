@@ -38,3 +38,18 @@ defAppearSum <- courtobs %>%
   mutate(Percent = round(`Number of Observations`/sum(`Number of Observations`)*100, 2)) %>%
   janitor::adorn_totals()
 writexl::write_xlsx(defAppearSum,'data/2024 Tenant Appearances.xlsx')
+
+defAppear24 <- courtobs %>%
+  filter(!is.na(jpCourt),
+         !jpCourt %in% c("5-2", "3-2", "2-1", '2-2'),
+         defAppear != "Unknown",
+         observationDate >= as.Date("2023-06-20") & observationDate < as.Date("2024-04-26")) %>%
+  group_by(jpCourt, defAppear) %>%
+  summarize(count = n()) %>%
+  filter(count > 1) %>%
+  ungroup(.) %>%
+  pivot_wider(names_from = defAppear, values_from = count, values_fill = 0) %>%
+  janitor::adorn_totals() %>%
+  mutate(AppearPer = round(Yes/(Yes+No), 2)*100,
+         type = "Tenant (Defendant) Appeared for Hearing",)
+writexl::write_xlsx(defAppear24, 'data/2024 Tenant Appearances (archived).xlsx')
